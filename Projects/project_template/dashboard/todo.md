@@ -1,3 +1,0 @@
-- current goal
-- next steps
-- blocked

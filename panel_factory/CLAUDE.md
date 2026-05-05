@@ -5,6 +5,9 @@
   - panel 不是一个一路被反复 mutate 的大表。
   - panel 默认应理解为：在某个 `intermediate` base table 上，late merge 多个 compact features，最后形成 panel。
   - 核心结构是：`intermediate` + `features` -> `panel`。
+  - `intermediate` 是 pipeline role，不等于必须单独落在 `data/intermediate/`。
+  - 在 first-pass / minimal pipeline 里，某个 existing feature-like artifact 也可以承担 special intermediate，只要它被当作 panel base 使用，边界清楚，并且 panel builder 再 late merge 其他 compact features。
+  - 当某个 artifact 作为 panel 的 base intermediate 使用时，它原本已有的全部变量都应保留在 final panel 里。这里的“做 base”不是只保留 key，而是在这个 base table 的完整变量集合上，再追加 late-merged feature columns。
 - 为什么要这样做
   - 做解耦。base table、feature engineering、panel assembly 是不同层。
   - 一个 `intermediate` 可以被多个 features 复用。
@@ -36,3 +39,7 @@
   - 中文简洁描述内容，technical terms 用 English。
   - 当结构不清晰时，先列当前 artifacts inventory，再提调整方案。
   - 优先恢复 minimal runnable pipeline，再做抽象和优化。
+- 运行 python 脚本
+  - 不要直接从脚本文件路径裸调用 Python，否则可能报 `ModuleNotFoundError`。
+  - 默认用 notebook 对应的解释器，并在 workspace 根目录下设置 `PYTHONPATH=/Users/dylanchen/Desktop/geek-community/panel_factory/src` 后再运行。
+  - 例如：`PYTHONPATH=/Users/dylanchen/Desktop/geek-community/panel_factory/src /Users/dylanchen/miniconda3/envs/cityu/bin/python panel_factory/src/panels/build_question_panel.py`
