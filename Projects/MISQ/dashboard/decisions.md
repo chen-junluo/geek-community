@@ -1,0 +1,5 @@
+- scope
+- data
+- variables
+- regression
+- writeup

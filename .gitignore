@@ -7,3 +7,11 @@ Thumbs.db
 .claude/
 __pycache__/
 *.pyc
+.cache/
+Archive/
+panel_factory/data/**
+!panel_factory/data/
+!panel_factory/data/raw/
+panel_factory/data/raw/*
+!panel_factory/data/raw/tagName_classified_GBK.csv
+output.doc
