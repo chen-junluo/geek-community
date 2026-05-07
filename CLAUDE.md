@@ -1,54 +1,70 @@
 # CLAUDE.md
-- 这个 template folder 是一个 mini research workspace。
-- 最外层默认分成三块：
-  - `Archive/`：legacy materials。这里放原始长 `.Rmd`、旧 analysis scripts、旧 panel、旧 tables / figures、旧 writeup。
-  - `panel_factory/`：shared data pipeline。本体职责是从 raw / legacy sources 中重建 reusable data artifacts。
-  - `Projects/`：downstream research spaces。这里放 project-specific analysis、outputs、writeup。
-- 默认 reconstruction workflow
-  - 先 inventory `Archive/`。
-  - 判断哪些内容应沉淀为 `panel_factory/` 里的 reusable pipeline。
-  - 判断哪些内容属于具体 project，放进 `Projects/`。
-  - 不要一上来就把 archive 全量重写。先恢复 minimal runnable structure，再逐步解耦。
+
+- 这是一个科研项目 workspace，不是单一项目仓库。当前 workspace 主要包含三类内容：
+  - `Archive/`：legacy materials。这里放旧 analysis scripts、旧 panel、旧 tables / figures、旧 writeup。主要用于参考，不应默认视为当前主流程。
+  - `panel_factory/`：shared data pipeline。用于从 raw data 生成 features，再将 features 合并为 panels。
+  - `Projects/`：downstream research spaces。项目分析、回归、写作等工作原则上应建立在 `panel_factory/` 产出的数据之上。
+
+
+---
+## 1. 项目文件夹和架构详细介绍
+
 - `panel_factory/` 的核心概念
-  - panel 的构建，不是把所有逻辑都堆在一个大表上反复改。
-  - panel 默认应理解为：在某个 `intermediate` base table 上，late merge 多个 compact features，最后形成 panel。
-  - 也就是说，核心结构是：`intermediate` + `features` -> `panel`。
-- 为什么要这样做
-  - 做解耦。base table、feature engineering、panel assembly 是不同层。
-  - 一个 `intermediate` 可以被多个 features 复用。
-  - 一个 feature set 也可以被多个 panels 或多个 projects 复用。
-  - 避免“每一步都 carry full table”的大表链式加工。
-  - 减少 project-specific logic 混入 shared pipeline。
-- `panel_factory/` 内部默认分工
-  - `data/`
-    - 存放 intermediate、compact features、final panels 等数据产物。
-    - raw-like source materials 如果需要保留，也应明确边界，不要随意覆写。
-  - `documents/`
-    - 存放 data dictionary、feature registry、panel version notes、dependency notes 等说明材料。
-  - `notebooks/`
-    - 用于 dashboard-style orchestration、检查中间产物、手动运行 pipeline。
-    - 不要默认把 notebooks 当作可废弃的临时文件。
-  - `src/`
-    - `features/`：生成 compact feature tables。
-    - `panels/`：把 feature late merge 到某个 intermediate 上，生成 final panel。
-    - `utils/`：shared utilities，例如 paths、registry、I/O helpers。
-- `src/` 下的默认设计原则
-  - 如果是 base 大表，命名应接近 `build_xxx_intermediate.py`。
-  - 如果是特征族，命名应接近 `build_xxx.py`。
-  - 如果是 panel，命名应接近 `build_xxx_panel.py`。
-  - 不要在 panel script 里重复生成已经可以独立生成的 feature。
-  - 不要为了加一个变量，就在 full panel 上一路 mutate 出更多中间表。
-  - 新变量如果能作为 compact feature 独立存在，就优先写成 feature builder。
-  - panel builder 的职责应尽量收敛到：读取某个 intermediate，merge 所需 features，输出 final panel。
-- `Projects/` 的默认边界
-  - `Projects/` 不是 shared pipeline。
-  - 这里放 project-specific regressions、tables、figures、writeup。
-  - 一个 data / panel 可能服务多个 projects，所以 `Projects/` 必须与 `panel_factory/` 分离。
-  - 如果某段逻辑将来应被多个 project 复用，优先考虑上移到 `panel_factory/`，而不是继续留在单个 project 里。
-- 与 archive 的关系
-  - `Archive/` 里的内容是 reconstruction source，不是 active workspace。
-  - 不要直接覆盖 legacy files。
-  - 如果 legacy workflow 是一个很长的 `.Rmd`，默认目标不是继续扩张这个 `.Rmd`，而是把可复用的数据构建逻辑拆回 `panel_factory/`，把 project-specific analysis 拆回 `Projects/`。
+  - 主要的逻辑是读取 raw data -> 生成 feature tables -> 将 feature tables 合并为最终 panels。注意 panel 的构建，不是把所有逻辑都堆在一个大表上反复改。更合适的方式是：在某个 `intermediate` base table 上，late merge 多个 compact features，最后形成 panel。
+  - 内部文件架构如下：
+    - `data/raw/`：原始数据，只读
+    - `data/features/`：生成的 feature 表，以及部分重要 intermediate
+    - `data/panels/`：最终 panel 数据
+    - `src/features/`：feature 生成脚本
+    - `src/panels/`：panel 聚合脚本
+    - `src/utils/`：shared utilities，例如 `paths`、registry、I/O helpers。
+    - `documents/`：可选参考文档。作用是减少重复阅读、节省 token、方便复查。这里的内容不是必须层，也不是 rule source。规则与协作方式以 `CLAUDE.md` 为准；如果 `documents/` 与 `CLAUDE.md` 不一致，应优先修正或忽略 `documents/`。如果某些内容需要修改或沉淀，不仅要更新对应 `documents/`，也要在合适层级的 `CLAUDE.md` 中补充 reference，确保这些参考文档能被稳定引用。
+    - `notebooks/`：用于 dashboard-style orchestration、供用户手动运行 pipeline，调用 `src/` 下的各类 Python 脚本。不要默认把 notebooks 当作一次性实验文件，也不要在未经说明的情况下把 notebook 工作流改写成别的交互方式。
+
+- `projects/`
+  - 这里存放具体研究项目。每个项目文件夹通常包括：项目说明、决策记录与待办、分阶段的 analysis、分阶段的 writeup
+  - 这些项目文件夹是 `panel_factory/` 下游的研究工作区，不是共享数据处理框架本身。因此：
+    - 项目分析代码不要与通用 pipeline 代码混淆
+    - 项目特定逻辑不要随意上移到 `panel_factory/`
+    - 写作材料、回归脚本、图表输出，应优先放在各自项目内部管理
+  - `Projects/` 层的 analysis code writing rules、默认 script template 与 output conventions，统一由 `Projects/Documents/analysis_script_template.md` 承接；`Projects/CLAUDE.md` 负责建立引用，不再内嵌冗长模板。
+
+- `archive/`
+  - 这里是迁移前的旧架构内容和历史项目材料。
+  - 用途：回溯旧逻辑、查找历史脚本或中间结果、对照迁移前后的处理方式
+  - 默认规则：
+    - `archive/` 不是当前主流程
+    - 不要默认把 `archive/` 中的代码当作最新版本
+    - 如需复用旧逻辑，应先与 `panel_factory/` 当前实现核对
+  - 如任务涉及任何数字化转型、reconstruction、legacy workflow 拆解、迁移前逻辑梳理，立即参考 `Archive/CLAUDE.md`
+
+---
+## 2. 默认工作边界
+
+除非用户明确要求，否则不要自动进行以下操作：
+- 不要为了“更整洁”而重命名文件夹
+- 不要自动重组 workspace 结构
+- 不要随意改动 raw data
+- 不要轻易修改 feature 名称、列名、merge keys、输出文件名
+- 不要把 `archive/` 误当作当前生产代码
+- 不要把项目内部分析逻辑直接混入 `panel_factory/`
+- 不要未经说明就重写 notebook 驱动的工作方式
+
+---
+## 3. 任务定位规则
+
+当用户提出任务时，先按下面的方式定位：
+- 如果任务涉及 raw data、feature 生成、panel 构建、pipeline 工具函数，优先查看 `panel_factory/`
+- 如果任务涉及回归、实证分析、表图输出、论文写作，优先查看 `projects/`
+- 如果任务涉及历史版本、旧架构、迁移前逻辑，查看 `archive/`
+- 如果任务涉及任何数字化转型、reconstruction、legacy workflow 拆解、迁移前逻辑梳理，除查看 `archive/` 外，还要优先遵守 `Archive/CLAUDE.md`
+
+---
+
+## 4. 局部说明优先
+
+如果某个子文件夹下还有自己的 `CLAUDE.md`，则该局部文件夹内的说明优先级更高。
+例如在 `panel_factory/` 内工作时，应同时遵守 `panel_factory/CLAUDE.md` 的要求。
 - 协作风格
   - 中文简洁描述内容，technical terms 用 English。
   - 当结构不清晰时，先列 inventory，再提 reconstruction plan。

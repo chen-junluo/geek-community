@@ -1,14 +1,14 @@
 # Artifact:  panel/question_panel
-# 输入:      data/features/question_ai_human_similarity.csv  (base intermediate / special intermediate)
+# 输入:      data/features/question_intermediate.csv
 #            data/features/question_ai_human_code_similarity.csv
 #            data/features/question_human_pairwise_similarity.csv
 #            data/features/question_content_jaccard_overlap.csv
-# Grain:     question-level (questionURL)
-# Merge keys: questionURL
+#            data/features/question_accepted_answer_similarity.csv
+# Grain:     question-level (question_id)
+# Merge keys: question_id
 # 输出:      data/panels/question_panel.csv
 #
 # 职责：读取 question-level base intermediate，然后在保留 base 全部变量的前提下，late merge 其他 question-level features，输出 final question panel。
-# 当前 first-pass pipeline 中，question_ai_human_similarity 同时承担 feature 与 intermediate 两种 role。
 # 不在本文件里重新生成任何 feature。
 
 import os
@@ -38,8 +38,12 @@ def build() -> pd.DataFrame:
 
     # ── 2. 读取 late-merge features ────────────────────────────────────────────
     feat_code_similarity = pd.read_csv(ARTIFACT_PATHS["features"]["question_ai_human_code_similarity"])
-    code_sim_cols = ["questionURL",
-                     "human1_human2_code_similarity", "ai_human1_code_similarity", "ai_human2_code_similarity"]
+    code_sim_cols = [
+        "questionURL",
+        "human1_human2_code_similarity",
+        "ai_human1_code_similarity",
+        "ai_human2_code_similarity",
+    ]
     code_sim_cols = [c for c in code_sim_cols if c in feat_code_similarity.columns]
     feat_code_similarity = feat_code_similarity[code_sim_cols].copy()
 
@@ -61,10 +65,25 @@ def build() -> pd.DataFrame:
     jaccard_cols = [c for c in jaccard_cols if c in feat_jaccard.columns]
     feat_jaccard = feat_jaccard[jaccard_cols].copy()
 
+    feat_accept_similarity = pd.read_csv(ARTIFACT_PATHS["features"]["question_accepted_answer_similarity"])
+    accept_cols = [
+        "question_id",
+        "has_ai_answer",
+        "has_accepted_answer",
+        "n_accepted_answers",
+        "anchor_selection_rule",
+        "accepted_resp_id",
+        "accepted_resp_ids",
+        "AISimWithAccept",
+    ]
+    accept_cols = [c for c in accept_cols if c in feat_accept_similarity.columns]
+    feat_accept_similarity = feat_accept_similarity[accept_cols].copy()
+
     # ── 3. Late merge ─────────────────────────────────────────────────────────
     panel = _late_merge_prefer_feature(intermediate, feat_code_similarity, ["questionURL"])
     panel = _late_merge_prefer_feature(panel, feat_pairwise, ["questionURL"])
     panel = _late_merge_prefer_feature(panel, feat_jaccard, ["questionURL"])
+    panel = _late_merge_prefer_feature(panel, feat_accept_similarity, ["question_id"])
 
     # ── 4. 输出 ───────────────────────────────────────────────────────────────
     out_path = ARTIFACT_PATHS["panels"]["question"]

@@ -1,45 +1,65 @@
 # panel_factory rules
+
+Working rules:
+1. Prioritize consistency with the current notebook pipeline before improving logic.
+2. Treat existing intermediate artifact names as contracts during the first migration pass.
+3. Preserve write/read CSV boundaries when they affect downstream behavior.
+4. Do not rename columns, merge keys, or staged output files unless all downstream consumers are updated together.
+5. Keep raw data read-only.
+
 - 这个文件夹是 shared data pipeline，不是 project-specific analysis space。
-- 它的核心职责是：从 raw / legacy sources 中，稳定地重建 reusable intermediate、features、final panels。
-- 最重要的结构理解
-  - panel 不是一个一路被反复 mutate 的大表。
-  - panel 默认应理解为：在某个 `intermediate` base table 上，late merge 多个 compact features，最后形成 panel。
-  - 核心结构是：`intermediate` + `features` -> `panel`。
-  - `intermediate` 是 pipeline role，不等于必须单独落在 `data/intermediate/`。
-  - 在 first-pass / minimal pipeline 里，某个 existing feature-like artifact 也可以承担 special intermediate，只要它被当作 panel base 使用，边界清楚，并且 panel builder 再 late merge 其他 compact features。
-  - 当某个 artifact 作为 panel 的 base intermediate 使用时，它原本已有的全部变量都应保留在 final panel 里。这里的“做 base”不是只保留 key，而是在这个 base table 的完整变量集合上，再追加 late-merged feature columns。
-- 为什么要这样做
-  - 做解耦。base table、feature engineering、panel assembly 是不同层。
-  - 一个 `intermediate` 可以被多个 features 复用。
-  - 一个 feature table 也可以被多个 panels 或多个 projects 复用。
-  - 避免“每一步都 carry full table”的大表链式加工。
-  - 减少 project-specific logic 混入 shared pipeline。
-- 默认边界
-  - `data/`：存放 intermediate、compact features、final panels。
-  - `documents/`：存放 data dictionary、feature registry、panel version notes、dependency notes。
-  - `notebooks/`：用于 dashboard-style orchestration、检查中间产物、手动运行 pipeline。
-  - `src/features/`：生成 compact feature tables。
-  - `src/panels/`：把 features late merge 到某个 intermediate 上，生成 final panel。
-  - `src/utils/`：shared utilities，例如 paths、registry、I/O helpers。
-- 默认工作原则
-  - 先尊重已有 artifact names、merge keys、output boundaries，再逐步优化。
-  - intermediate artifact names 在 first migration pass 中应视为 contract。
-  - raw-like source materials 默认只读，不要随意覆写。
-  - 不要为了“更整洁”而随意改动 staged output file names。
+- 它的核心职责是：从 raw 中，稳定地重建 reusable intermediate、features、final panels。代码的来源请听从用户指示，可以用Archive里面重建，也可以根据自然语言指令。
+
+- `panel_factory/` 的核心概念
+  - 主要的逻辑是读取 raw data -> 生成 feature tables -> 将 feature tables 合并为最终 panels。注意 panel 的构建，不是把所有逻辑都堆在一个大表上反复改。更合适的方式是：在某个 `intermediate` base table 上，late merge 多个 compact features，最后形成 panel。
+  - 内部文件架构如下：
+    - `data/raw/`：原始数据，只读
+    - `data/features/`：生成的 feature 表，以及部分重要 intermediate
+    - `data/panels/`：最终 panel 数据
+    - `src/features/`：feature 生成脚本
+    - `src/panels/`：panel 聚合脚本
+    - `src/utils/`：shared utilities，例如 `paths`、registry、I/O helpers。
+    - `documents/`：可选参考文档。作用是减少重复阅读、节省 token、方便复查。这里的内容不是必须层，也不是 rule source。规则与协作方式以 `CLAUDE.md` 为准；如果 `documents/` 与 `CLAUDE.md` 不一致，应优先修正或忽略 `documents/`。当前默认参考包括 `documents/features_registry.md`、`documents/pipeline_dependency_table.md`、`documents/naming_conventions.md`。如果某些内容需要修改或沉淀，不仅要更新对应 `documents/`，也要在合适层级的 `CLAUDE.md` 中补充 reference。
+    - `notebooks/`：用于 dashboard-style orchestration、供用户手动运行 pipeline，调用 `src/` 下的各类 Python 脚本。不要默认把 notebooks 当作一次性实验文件，也不要在未经说明的情况下把 notebook 工作流改写成别的交互方式。
+
 - 写新代码时的默认判断
   - 如果要加的是 reusable variable，先判断它是否应该成为一个独立 feature table。
   - 如果某段逻辑只是某个 project 的临时分析需求，不要直接写进 `panel_factory/`。
   - 如果当前目标只是组装一个 panel，不要顺手把 feature generation 也塞进 panel builder。
   - 如果已有 intermediate 或 feature 已能支持当前任务，直接复用，不要重复造轮子。
-- `src/` 命名习惯
-  - intermediate builder：`build_xxx_intermediate.py`
-  - feature builder：`build_xxx.py`
-  - panel builder：`build_xxx_panel.py`
-- 协作风格
-  - 中文简洁描述内容，technical terms 用 English。
-  - 当结构不清晰时，先列当前 artifacts inventory，再提调整方案。
-  - 优先恢复 minimal runnable pipeline，再做抽象和优化。
+  - 涉及 artifact 依赖关系时，优先参考 `documents/pipeline_dependency_table.md`。
+  - 涉及 `feature` 是否已存在、是否应复用时，优先参考 `documents/features_registry.md`。
+
+
 - 运行 python 脚本
   - 不要直接从脚本文件路径裸调用 Python，否则可能报 `ModuleNotFoundError`。
   - 默认用 notebook 对应的解释器，并在 workspace 根目录下设置 `PYTHONPATH=/Users/dylanchen/Desktop/geek-community/panel_factory/src` 后再运行。
   - 例如：`PYTHONPATH=/Users/dylanchen/Desktop/geek-community/panel_factory/src /Users/dylanchen/miniconda3/envs/cityu/bin/python panel_factory/src/panels/build_question_panel.py`
+
+
+- standardized index contract
+  - `question_id`：question-level ID。
+  - `answer_id`：all-answer universe 的 index，包含 AI answer。
+  - `resp_id`：human-response universe 的 index，只给 human answers。
+  - `cmnID == 0` 是 question content，不算 answer。
+  - `cmnID` 不是 chronological order，不能拿来做 sequencing。
+  - 新 index 默认按 `dateID` / chronological order 构造。
+  - 必须强区分 AI answer 与 human answer，不要混用 `answer_id` 与 `resp_id`。
+- MISQ sample rule
+  - 严格沿用 `Archive/round2_parser_for_panel.ipynb` 的 sample definition。
+  - 先在 question rows 上筛：`ask == 1` 且 `date >= 2023-01-01`。
+  - 再按 `questionURL` 保留这些 questions 对应的 whole thread。
+  - MISQ-specific intermediates / features / panels 必须只在这个 universe 内计算与 merge。
+  - 默认不要直接覆盖通用 panel builder，优先新增 `*_MISQ` builders 明确语义。
+- **default version rule**
+  - 当前默认使用带 `_MISQ` 后缀的 intermediates 和 panels。
+  - 所有新 feature、新 panel、新 project 默认基于 MISQ 版本构建。
+  - 不带 `_MISQ` 后缀的旧版本文件保留在原位置，但不再作为 active reference。
+  - 除非用户明确说明要做非 MISQ 项目，否则一律使用 MISQ 版本。
+  - 目的：减少版本混淆，避免重复工作，统一 pipeline 入口。
+  - 为什么要这样做
+    - 做解耦。base table、feature engineering、panel assembly 是不同层。
+    - 一个 `intermediate` 可以被多个 features 复用。
+    - 一个 feature table 也可以被多个 panels 或多个 projects 复用。
+    - 避免“每一步都 carry full table”的大表链式加工。
+    - 减少 project-specific logic 混入 shared pipeline。

@@ -1,13 +1,14 @@
 # Artifact:  feature/question_ai_human_code_similarity
-# 输入:      data/raw/cmn_base.csv, data/raw/cmn_content.csv, data/raw/question_ai_content.csv
-# Grain:     question-level (questionURL)
-# Merge keys: questionURL
+# 输入:      data/features/question_intermediate_MISQ.csv, data/features/human_answer_intermediate_MISQ.csv,
+#            data/features/full_answer_intermediate_MISQ.csv
+# Grain:     question-level (question_id)
+# Merge keys: question_id, questionURL
 # 输出:      data/features/question_ai_human_code_similarity.csv
 #
-# 逻辑：对每个 question，用 sentence-transformers 计算三个 cosine similarity：
-#   - human1_human2_code_similarity：第一个与第二个 human answer 的 content_code_text 之间（treatment + control 都算）
-#   - ai_human1_code_similarity：AI answer 与第一个 human answer 的 content_code_text（仅 treatment，control 为 NaN）
-#   - ai_human2_code_similarity：AI answer 与第二个 human answer 的 content_code_text（仅 treatment，control 为 NaN）
+# 逻辑：在 MISQ universe 内，对每个 question，用 sentence-transformers 计算三个 code cosine similarity：
+#   - human1_human2_code_similarity：第一个与第二个 human answer 的 `content_code_text` 之间
+#   - ai_human1_code_similarity：AI answer 与第一个 human answer 的 `content_code_text`
+#   - ai_human2_code_similarity：AI answer 与第二个 human answer 的 `content_code_text`
 
 import os
 import numpy as np
@@ -46,28 +47,21 @@ def compute_similarity(text_a, text_b, model) -> float:
 
 def build_question_level_similarity(
     group: pd.DataFrame,
-    question_ai_content: pd.DataFrame,
+    ai_lookup: pd.Series,
     model,
 ) -> pd.Series:
-    question_url = group.name
+    question_id = group.name
+    question_url = group["questionURL"].iloc[0]
 
-    human_answers = (
-        group[(group["dateID"] != 0) & group["content_code_text"].notna()]
-        .sort_values("dateID")
-    )
+    human_answers = group[group["content_code_text"].notna()].sort_values("dateID")
     first_human_text = human_answers.iloc[0]["content_code_text"] if len(human_answers) >= 1 else np.nan
     second_human_text = human_answers.iloc[1]["content_code_text"] if len(human_answers) >= 2 else np.nan
 
-    ai_rows = question_ai_content[question_ai_content["questionURL"] == question_url]
-    ai_text = np.nan
-    if "preAI-content_code_text" in ai_rows.columns:
-        valid = ai_rows["preAI-content_code_text"].dropna()
-        if len(valid) > 0:
-            ai_text = valid.iloc[0]
-
+    ai_text = ai_lookup.get(question_id)
     is_treatment = pd.notna(ai_text) and str(ai_text).strip() != ""
 
     result = {
+        "question_id": question_id,
         "questionURL": question_url,
         "group_type": "treatment" if is_treatment else "control",
         "n_human_answers": len(human_answers),
@@ -84,30 +78,30 @@ def build_question_level_similarity(
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
-    cmn_base = pd.read_csv(os.path.join(raw_dir, "cmn_base.csv"))
-    cmn_base["date"] = pd.to_datetime(cmn_base["date"])
-    unique_question_urls = cmn_base[(cmn_base["cmnID"] == 0) & (cmn_base["date"] > "2023-01-01")]["questionURL"].unique()
+def build() -> pd.DataFrame:
+    question = pd.read_csv(ARTIFACT_PATHS["intermediate"]["question_misq"])
+    human_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["human_answer_misq"])
+    full_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["full_answer_misq"])
 
-    question_ai_content = pd.read_csv(os.path.join(raw_dir, "question_ai_content.csv"))
-    cmn_content = pd.read_csv(os.path.join(raw_dir, "cmn_content.csv"))
-    cmn_content = cmn_content.merge(
-        cmn_base[["questionURL", "cmnID", "date", "accept"]],
-        on=["questionURL", "cmnID"], how="left"
+    ai_lookup = (
+        full_answer[full_answer["answer_source"] == "AI_answer"]
+        [["question_id", "content_code_text"]]
+        .drop_duplicates("question_id")
+        .set_index("question_id")["content_code_text"]
     )
-    cmn_content["date"] = pd.to_datetime(cmn_content["date"])
-    cmn_content = cmn_content.sort_values(by="date")
-    cmn_content["dateID"] = cmn_content.groupby("questionURL").cumcount()
-
-    base = cmn_content[cmn_content["questionURL"].isin(unique_question_urls)].copy()
 
     model = _load_model()
     tqdm.pandas(desc="Computing question-level code similarity")
 
     feature = (
-        base.groupby("questionURL")
-        .progress_apply(lambda g: build_question_level_similarity(g, question_ai_content, model))
+        human_answer.groupby("question_id")
+        .progress_apply(lambda g: build_question_level_similarity(g, ai_lookup, model))
         .reset_index(drop=True)
+    )
+    feature = question[["question_id", "questionURL"]].merge(
+        feature,
+        on=["question_id", "questionURL"],
+        how="left",
     )
 
     feature.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")

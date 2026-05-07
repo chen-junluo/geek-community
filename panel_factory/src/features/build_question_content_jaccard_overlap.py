@@ -1,16 +1,17 @@
 # Artifact:  feature/question_content_jaccard_overlap
-# 输入:      data/raw/cmn_base.csv, data/raw/cmn_content.csv, data/raw/question_ai_content.csv
-# Grain:     question-level (questionURL)
-# Merge keys: questionURL
+# 输入:      data/features/question_intermediate_MISQ.csv, data/features/human_answer_intermediate_MISQ.csv,
+#            data/features/full_answer_intermediate_MISQ.csv
+# Grain:     question-level (question_id)
+# Merge keys: question_id, questionURL
 # 输出:      data/features/question_content_jaccard_overlap.csv
 #
-# 逻辑：对每个 question，用 token-set Jaccard overlap 计算六个变量：
-#   - jaccard_h1_h2：第一个与第二个 human answer 的 content_full_text overlap
-#   - jaccard_ai_h2：AI answer 与第二个 human answer 的 content_full_text overlap（仅 treatment，control 为 NaN）
-#   - jaccard_ans1_ans2：treatment 用 AI vs human2，control 用 human1 vs human2
-#   - jaccard_h1_h2_code：第一个与第二个 human answer 的 content_code_text overlap
-#   - jaccard_ai_h2_code：AI answer 与第二个 human answer 的 content_code_text overlap（仅 treatment，control 为 NaN）
-#   - jaccard_ans1_ans2_code：treatment 用 AI vs human2，control 用 human1 vs human2
+# 逻辑：在 MISQ universe 内，对每个 question，用 token-set Jaccard overlap 计算六个变量：
+#   - jaccard_h1_h2：第一个与第二个 human answer 的 `content_full_text` overlap
+#   - jaccard_ai_h2：AI answer 与第二个 human answer 的 `content_full_text` overlap（仅有 AI answer 时非空）
+#   - jaccard_ans1_ans2：有 AI answer 时用 AI vs human2，否则用 human1 vs human2
+#   - jaccard_h1_h2_code：第一个与第二个 human answer 的 `content_code_text` overlap
+#   - jaccard_ai_h2_code：AI answer 与第二个 human answer 的 `content_code_text` overlap（仅有 AI answer 时非空）
+#   - jaccard_ans1_ans2_code：有 AI answer 时用 AI vs human2，否则用 human1 vs human2
 
 import os
 import re
@@ -71,38 +72,14 @@ def compute_jaccard(text_a, text_b) -> float:
 
 # ── Text extraction helpers ─────────────────────────────────────────────────
 
-def _extract_ai_text(ai_rows: pd.DataFrame, ai_col: str, ai_fallback_col=None):
-    ai_text = np.nan
-    if ai_col in ai_rows.columns:
-        valid = ai_rows[ai_col].dropna()
-        if len(valid) > 0:
-            ai_text = valid.iloc[0]
-    if pd.isna(ai_text) and ai_fallback_col and ai_fallback_col in ai_rows.columns:
-        valid = ai_rows[ai_fallback_col].dropna()
-        if len(valid) > 0:
-            ai_text = valid.iloc[0]
-    return ai_text
-
-
 def _extract_pair_texts(
     group: pd.DataFrame,
-    question_ai_content: pd.DataFrame,
+    ai_text,
     human_col: str,
-    ai_col: str,
-    ai_fallback_col=None,
 ):
-    question_url = group.name
-
-    human_answers = (
-        group[(group["dateID"] != 0) & group[human_col].notna()]
-        .sort_values("dateID")
-    )
+    human_answers = group[group[human_col].notna()].sort_values("dateID")
     first_human_text = human_answers.iloc[0][human_col] if len(human_answers) >= 1 else np.nan
     second_human_text = human_answers.iloc[1][human_col] if len(human_answers) >= 2 else np.nan
-
-    ai_rows = question_ai_content[question_ai_content["questionURL"] == question_url]
-    ai_text = _extract_ai_text(ai_rows, ai_col, ai_fallback_col)
-
     return first_human_text, second_human_text, ai_text, len(human_answers)
 
 
@@ -117,21 +94,22 @@ def _build_overlap_triplet(h1_text, h2_text, ai_text, is_treatment: bool):
 
 # ── Per-question builder ────────────────────────────────────────────────────
 
-def build_question_level_overlap(group: pd.DataFrame, question_ai_content: pd.DataFrame) -> pd.Series:
-    question_url = group.name
+def build_question_level_overlap(group: pd.DataFrame, ai_full_lookup: pd.Series, ai_code_lookup: pd.Series) -> pd.Series:
+    question_id = group.name
+    question_url = group["questionURL"].iloc[0]
+
+    ai_full = ai_full_lookup.get(question_id)
+    ai_code = ai_code_lookup.get(question_id)
 
     h1_full, h2_full, ai_full, n_human_answers = _extract_pair_texts(
         group,
-        question_ai_content,
+        ai_full,
         human_col="content_full_text",
-        ai_col="preAI-content_full_text",
-        ai_fallback_col="preAI-content_CN_text",
     )
     h1_code, h2_code, ai_code, _ = _extract_pair_texts(
         group,
-        question_ai_content,
+        ai_code,
         human_col="content_code_text",
-        ai_col="preAI-content_code_text",
     )
 
     is_treatment = pd.notna(ai_full) and str(ai_full).strip() != ""
@@ -145,6 +123,7 @@ def build_question_level_overlap(group: pd.DataFrame, question_ai_content: pd.Da
 
     return pd.Series(
         {
+            "question_id": question_id,
             "questionURL": question_url,
             "group_type": "treatment" if is_treatment else "control",
             "n_human_answers": n_human_answers,
@@ -160,29 +139,35 @@ def build_question_level_overlap(group: pd.DataFrame, question_ai_content: pd.Da
 
 # ── Main ────────────────────────────────────────────────────────────────────
 
-def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
-    cmn_base = pd.read_csv(os.path.join(raw_dir, "cmn_base.csv"))
-    cmn_base["date"] = pd.to_datetime(cmn_base["date"])
-    unique_question_urls = cmn_base[(cmn_base["cmnID"] == 0) & (cmn_base["date"] > "2023-01-01")]["questionURL"].unique()
+def build() -> pd.DataFrame:
+    question = pd.read_csv(ARTIFACT_PATHS["intermediate"]["question_misq"])
+    human_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["human_answer_misq"])
+    full_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["full_answer_misq"])
 
-    question_ai_content = pd.read_csv(os.path.join(raw_dir, "question_ai_content.csv"))
-    cmn_content = pd.read_csv(os.path.join(raw_dir, "cmn_content.csv"))
-    cmn_content = cmn_content.merge(
-        cmn_base[["questionURL", "cmnID", "date", "accept"]],
-        on=["questionURL", "cmnID"], how="left"
+    ai_full_lookup = (
+        full_answer[full_answer["answer_source"] == "AI_answer"]
+        [["question_id", "answer_text"]]
+        .drop_duplicates("question_id")
+        .set_index("question_id")["answer_text"]
     )
-    cmn_content["date"] = pd.to_datetime(cmn_content["date"])
-    cmn_content = cmn_content.sort_values(by="date")
-    cmn_content["dateID"] = cmn_content.groupby("questionURL").cumcount()
-
-    base = cmn_content[cmn_content["questionURL"].isin(unique_question_urls)].copy()
+    ai_code_lookup = (
+        full_answer[full_answer["answer_source"] == "AI_answer"]
+        [["question_id", "content_code_text"]]
+        .drop_duplicates("question_id")
+        .set_index("question_id")["content_code_text"]
+    )
 
     tqdm.pandas(desc="Computing question-level Jaccard overlap")
 
     feature = (
-        base.groupby("questionURL")
-        .progress_apply(lambda g: build_question_level_overlap(g, question_ai_content))
+        human_answer.groupby("question_id")
+        .progress_apply(lambda g: build_question_level_overlap(g, ai_full_lookup, ai_code_lookup))
         .reset_index(drop=True)
+    )
+    feature = question[["question_id", "questionURL"]].merge(
+        feature,
+        on=["question_id", "questionURL"],
+        how="left",
     )
 
     feature.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")

@@ -1,14 +1,14 @@
 # Artifact:  feature/question_human_pairwise_similarity
-# 输入:      data/raw/cmn_base.csv, data/raw/cmn_content.csv, data/raw/question_ai_content.csv
-# Grain:     question-level (questionURL)
-# Merge key: questionURL
+# 输入:      data/features/question_intermediate_MISQ.csv, data/features/human_answer_intermediate_MISQ.csv,
+#            data/features/full_answer_intermediate_MISQ.csv
+# Grain:     question-level (question_id)
+# Merge keys: question_id, questionURL
 # 输出:      data/features/question_human_pairwise_similarity.csv
 #
-# 逻辑：
-#   - treatment 组：对该 question 下所有 human answers 做 pairwise cosine similarity，取 mean。
-#   - control 组：删掉第一个 human answer（按时间排序），对剩余 human answers 做 pairwise similarity mean。
-#     （模拟 treatment 组中 AI 占据第一位后，后续 human answers 之间的相似度）
-#   - 可用 human answers < 2 → human_pairwise_similarity_mean = np.nan
+# 逻辑：在 MISQ universe 内：
+#   - 有 AI answer 时：对该 question 下所有 human answers 做 pairwise cosine similarity，取 mean。
+#   - 无 AI answer 时：删掉第一个 human answer，对剩余 human answers 做 pairwise similarity mean。
+#   - 可用 human answers < 2 → `human_pairwise_similarity_mean = np.nan`
 
 import os
 import itertools
@@ -46,43 +46,32 @@ def _pairwise_mean_similarity(texts: list[str], model) -> float:
     return float(np.mean(scores))
 
 
-def _is_treatment(question_url: str, question_ai_content: pd.DataFrame) -> bool:
-    """判断该 question 是否为 treatment（有 AI answer）。"""
-    rows = question_ai_content[question_ai_content["questionURL"] == question_url]
-    for col in ["preAI-content_full_text", "preAI-content_CN_text"]:
-        if col in rows.columns:
-            valid = rows[col].dropna()
-            if len(valid) > 0 and str(valid.iloc[0]).strip():
-                return True
-    return False
-
-
 # ── Per-question builder ──────────────────────────────────────────────────────
 
-def build_question_pairwise(group: pd.DataFrame, question_ai_content: pd.DataFrame,
-                            model) -> pd.Series:
-    question_url = group.name
+def build_question_pairwise(
+    group: pd.DataFrame,
+    ai_lookup: pd.Series,
+    model,
+) -> pd.Series:
+    question_id = group.name
+    question_url = group["questionURL"].iloc[0]
 
-    # 所有 human answers，按时间排序（dateID 是 cumcount，0 = question 本身）
-    human_answers = (
-        group[(group["dateID"] != 0) & group["content_full_text"].notna()]
-        .sort_values("dateID")
-    )
-    human_texts = human_answers["content_full_text"].str.strip().tolist()
-    human_texts = [t for t in human_texts if t]  # 去掉空字符串
+    human_answers = group[group["content_full_text"].notna()].sort_values("dateID")
+    human_texts = human_answers["content_full_text"].astype(str).str.strip().tolist()
+    human_texts = [t for t in human_texts if t]
 
-    is_treat = _is_treatment(question_url, question_ai_content)
+    ai_text = ai_lookup.get(question_id)
+    is_treat = pd.notna(ai_text) and str(ai_text).strip() != ""
 
     if is_treat:
-        # treatment：所有 human answers 做 pairwise
         candidate_texts = human_texts
     else:
-        # control：删掉第一个 human answer，剩余做 pairwise
         candidate_texts = human_texts[1:] if len(human_texts) >= 1 else []
 
     sim = _pairwise_mean_similarity(candidate_texts, model)
 
     return pd.Series({
+        "question_id": question_id,
         "questionURL": question_url,
         "group_type": "treatment" if is_treat else "control",
         "n_human_answers": len(human_texts),
@@ -93,32 +82,30 @@ def build_question_pairwise(group: pd.DataFrame, question_ai_content: pd.DataFra
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
-    cmn_base = pd.read_csv(os.path.join(raw_dir, "cmn_base.csv"))
-    cmn_base["date"] = pd.to_datetime(cmn_base["date"])
-    unique_question_urls = cmn_base[
-        (cmn_base["cmnID"] == 0) & (cmn_base["date"] > "2023-01-01")
-    ]["questionURL"].unique()
+def build() -> pd.DataFrame:
+    question = pd.read_csv(ARTIFACT_PATHS["intermediate"]["question_misq"])
+    human_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["human_answer_misq"])
+    full_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["full_answer_misq"])
 
-    question_ai_content = pd.read_csv(os.path.join(raw_dir, "question_ai_content.csv"))
-    cmn_content = pd.read_csv(os.path.join(raw_dir, "cmn_content.csv"))
-    cmn_content = cmn_content.merge(
-        cmn_base[["questionURL", "cmnID", "date"]],
-        on=["questionURL", "cmnID"], how="left"
+    ai_lookup = (
+        full_answer[full_answer["answer_source"] == "AI_answer"]
+        [["question_id", "answer_text"]]
+        .drop_duplicates("question_id")
+        .set_index("question_id")["answer_text"]
     )
-    cmn_content["date"] = pd.to_datetime(cmn_content["date"])
-    cmn_content = cmn_content.sort_values(by="date")
-    cmn_content["dateID"] = cmn_content.groupby("questionURL").cumcount()
-
-    base = cmn_content[cmn_content["questionURL"].isin(unique_question_urls)].copy()
 
     model = _load_model()
     tqdm.pandas(desc="Computing pairwise similarity")
 
     feature = (
-        base.groupby("questionURL")
-        .progress_apply(lambda g: build_question_pairwise(g, question_ai_content, model))
+        human_answer.groupby("question_id")
+        .progress_apply(lambda g: build_question_pairwise(g, ai_lookup, model))
         .reset_index(drop=True)
+    )
+    feature = question[["question_id", "questionURL"]].merge(
+        feature,
+        on=["question_id", "questionURL"],
+        how="left",
     )
 
     feature.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")

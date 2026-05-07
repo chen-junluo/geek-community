@@ -1,11 +1,12 @@
 # Artifact:  feature/answer_llm_deviation
-# 输入:      data/raw/cmn_base.csv, data/raw/cmn_content.csv, data/raw/question_ai_content.csv
-# Grain:     answer-level (questionURL × cmnID)
-# Merge keys: questionURL, cmnID
+# 输入:      data/features/question_intermediate_MISQ.csv, data/features/human_answer_intermediate_MISQ.csv,
+#            data/features/full_answer_intermediate_MISQ.csv
+# Grain:     human-answer-level (question_id × resp_id)
+# Merge keys: question_id, resp_id
 # 输出:      data/features/answer_llm_deviation.csv
 #
-# 逻辑：对每个 answer pair（earlier answer vs later answer），用 DeepSeek 评估
-#       later answer 相对于 earlier answer 的技术路径偏离程度（deviation_score 0-10）。
+# 逻辑：在 MISQ human-response universe 内，对每个 human answer pair（earlier answer vs later answer），
+#       用 DeepSeek 评估 later answer 相对于 earlier answer 的 technical-path deviation 程度（0-10）。
 #       Treatment: earlier = AI answer；Control: earlier = 第一个 human answer。
 
 import os
@@ -220,53 +221,56 @@ def _call_api(prompt: str) -> Tuple[Optional[str], Optional[str]]:
 
 # ── Panel preparation ─────────────────────────────────────────────────────────
 
-def prepare_eval_panel(cmn_content: pd.DataFrame, question_ai_content: pd.DataFrame,
-                       unique_question_urls) -> pd.DataFrame:
-    base = cmn_content[cmn_content["questionURL"].isin(unique_question_urls)].copy()
-    base = base.sort_values(["questionURL", "dateID", "date", "cmnID"], na_position="last")
-
-    question_rows = (
-        base[base["dateID"] == 0][["questionURL", "content_full_text"]]
-        .drop_duplicates("questionURL")
-        .rename(columns={"content_full_text": "question_text"})
+def prepare_eval_panel(
+    question: pd.DataFrame,
+    human_answer: pd.DataFrame,
+    full_answer: pd.DataFrame,
+) -> pd.DataFrame:
+    question_rows = question[["question_id", "questionURL", "question_text"]].drop_duplicates("question_id")
+    ai_rows = (
+        full_answer[full_answer["answer_source"] == "AI_answer"]
+        [["question_id", "answer_text"]]
+        .rename(columns={"answer_text": "ai_answer_text"})
+        .drop_duplicates("question_id")
     )
-    treatment_map = (
-        question_ai_content[["questionURL", "preAI-content_full_text"]]
-        .drop_duplicates("questionURL")
-        .assign(is_treatment=lambda df: df["preAI-content_full_text"].notna().astype(int))
-    )
-    human_answers = base[(base["dateID"] != 0) & base["content_full_text"].notna()].copy()
-    human_answers = human_answers.sort_values(["questionURL", "dateID", "date", "cmnID"], na_position="last")
-
     first_human = (
-        human_answers.groupby("questionURL").first().reset_index()
-        [["questionURL", "cmnID", "dateID", "content_full_text"]]
-        .rename(columns={"cmnID": "first_human_cmnID", "dateID": "first_human_dateID",
-                         "content_full_text": "first_human_text"})
+        human_answer[human_answer["human_answer_text"].notna()]
+        .sort_values(["question_id", "dateID", "date", "cmnID"], na_position="last")
+        .groupby("question_id")
+        .first()
+        .reset_index()
+        [["question_id", "resp_id", "cmnID", "dateID", "human_answer_text"]]
+        .rename(columns={
+            "resp_id": "first_human_resp_id",
+            "cmnID": "first_human_cmnID",
+            "dateID": "first_human_dateID",
+            "human_answer_text": "first_human_text",
+        })
     )
 
     panel = (
-        human_answers
-        .merge(question_rows, on="questionURL", how="left")
-        .merge(treatment_map, on="questionURL", how="left")
-        .merge(first_human, on="questionURL", how="left")
+        human_answer[human_answer["human_answer_text"].notna()].copy()
+        .merge(question_rows, on=["question_id", "questionURL"], how="left")
+        .merge(ai_rows, on="question_id", how="left")
+        .merge(first_human, on="question_id", how="left")
     )
-    panel["is_treatment"] = panel["is_treatment"].fillna(0).astype(int)
-
+    panel["is_treatment"] = panel["ai_answer_text"].notna().astype(int)
     panel["anchor_source"] = np.where(panel["is_treatment"] == 1, "AI_answer", "first_human_answer")
+    panel["anchor_resp_id"] = np.where(panel["is_treatment"] == 1, np.nan, panel["first_human_resp_id"])
     panel["anchor_cmnID"] = np.where(panel["is_treatment"] == 1, np.nan, panel["first_human_cmnID"])
     panel["anchor_dateID"] = np.where(panel["is_treatment"] == 1, np.nan, panel["first_human_dateID"])
     panel["earlier_answer_text"] = np.where(
-        panel["is_treatment"] == 1, panel["preAI-content_full_text"], panel["first_human_text"]
+        panel["is_treatment"] == 1,
+        panel["ai_answer_text"],
+        panel["first_human_text"],
     )
-    panel = panel.rename(columns={"content_full_text": "later_answer_text"})
+    panel = panel.rename(columns={"human_answer_text": "later_answer_text"})
 
     t_mask = panel["is_treatment"] == 1
     c_mask = panel["is_treatment"] == 0
     panel = panel[(t_mask & panel["later_answer_text"].notna()) | (c_mask & panel["later_answer_text"].notna())].copy()
     panel = panel[(t_mask & panel["dateID"].notna()) | (c_mask & (panel["dateID"] > panel["first_human_dateID"]))].copy()
 
-    panel["question_id"] = panel["questionURL"].apply(_extract_question_id)
     panel["comparison_target"] = panel.apply(_comparison_label, axis=1)
     panel["question_text_for_llm"] = panel["question_text"].apply(_truncate_text)
     panel["earlier_answer_text_for_llm"] = panel["earlier_answer_text"].apply(_truncate_text)
@@ -274,9 +278,9 @@ def prepare_eval_panel(cmn_content: pd.DataFrame, question_ai_content: pd.DataFr
     panel["cache_key"] = panel.apply(_build_cache_key, axis=1)
 
     return panel[[
-        "questionURL", "question_id", "comparison_target",
+        "question_id", "questionURL", "resp_id", "comparison_target",
         "cmnID", "dateID", "date", "accept", "is_treatment",
-        "anchor_source", "anchor_cmnID", "anchor_dateID",
+        "anchor_source", "anchor_resp_id", "anchor_cmnID", "anchor_dateID",
         "question_text", "earlier_answer_text", "later_answer_text",
         "question_text_for_llm", "earlier_answer_text_for_llm", "later_answer_text_for_llm",
         "cache_key",
@@ -340,19 +344,12 @@ def process_single_pair(row: pd.Series) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
-def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
-    cmn_base = pd.read_csv(os.path.join(raw_dir, "cmn_base.csv"))
-    cmn_base["date"] = pd.to_datetime(cmn_base["date"])
-    unique_question_urls = cmn_base[(cmn_base["cmnID"] == 0) & (cmn_base["date"] > "2023-01-01")]["questionURL"].unique()
+def build() -> pd.DataFrame:
+    question = pd.read_csv(ARTIFACT_PATHS["intermediate"]["question_misq"])
+    human_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["human_answer_misq"])
+    full_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["full_answer_misq"])
 
-    question_ai_content = pd.read_csv(os.path.join(raw_dir, "question_ai_content.csv"))
-    cmn_content = pd.read_csv(os.path.join(raw_dir, "cmn_content.csv"))
-    cmn_content = cmn_content.merge(cmn_base[["questionURL", "cmnID", "date", "accept"]], on=["questionURL", "cmnID"], how="left")
-    cmn_content["date"] = pd.to_datetime(cmn_content["date"])
-    cmn_content = cmn_content.sort_values(by="date")
-    cmn_content["dateID"] = cmn_content.groupby("questionURL").cumcount()
-
-    eval_panel = prepare_eval_panel(cmn_content, question_ai_content, unique_question_urls)
+    eval_panel = prepare_eval_panel(question, human_answer, full_answer)
     logger.info(f"准备评估 {len(eval_panel)} 个 answer pairs，线程数: {MAX_WORKERS}")
 
     pair_records = eval_panel.to_dict("records")
@@ -372,8 +369,8 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
     result_df = pd.DataFrame(eval_results)
     output = eval_panel.merge(result_df, on="cache_key", how="left")
 
-    feature_cols = ["questionURL", "cmnID", "dateID", "is_treatment", "anchor_source",
-                    "anchor_cmnID", "anchor_dateID", "comparison_target",
+    feature_cols = ["question_id", "questionURL", "resp_id", "cmnID", "dateID", "is_treatment", "anchor_source",
+                    "anchor_resp_id", "anchor_cmnID", "anchor_dateID", "comparison_target",
                     "deviation_score", "justification", "relationship_label",
                     "prompt_version", "model_name", "error_reason"]
     feature = output[feature_cols].copy()
