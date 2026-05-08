@@ -1,11 +1,26 @@
 # Artifact:  feature/answer_accepted_answer_similarity_MISQ
-# 输入:      data/features/human_answer_intermediate_MISQ.csv
+# 输入:      data/features/human_answer_intermediate_MISQ.csv, data/features/full_answer_intermediate_MISQ.csv
 # Grain:     human-answer-level (questionURL × resp_id)
 # Merge keys: questionURL, resp_id
 # 输出:      data/features/answer_accepted_answer_similarity_MISQ.csv
 #
-# 逻辑：在 MISQ universe 内，用 accepted human answer 作为 anchor，计算每个 human answer 与 anchor 的
-#       full-text cosine similarity，列名固定为 SimWithAccept。
+# 逻辑：
+# - 为每个 question 选择 baseline answer (anchor)，计算每个 human answer 与 baseline 的 full-text cosine similarity
+# - 输出变量：`SimWithAccept`
+#
+# Baseline 选择规则（优先级从高到低）：
+# 1. 如果有 accepted answer：
+#    - 只有 1 个 → 选这个（rule = "single_accept"）
+#    - 有多个 → 选 `netlikeNum` 最高的
+#      - 唯一最高 → 选这个（rule = "max_metlikes_among_accepted"）
+#      - 多个并列最高 → 按 `resp_id` 排序后拼接（rule = "concat_tied_accepted"）
+# 2. 如果没有 accepted answer：
+#    - 选 `netlikeNum` 最高的 human answer
+#      - 唯一最高 → 选这个（rule = "max_netlike_no_accept"）
+#      - 多个并列最高 → 按 `resp_id` 排序后拼接（rule = "concat_tied_netlike_no_accept"）
+# 3. 如果完全没有 human answer → baseline = NaN（rule = NaN）
+#
+# 注：`resp_id` 是按 chronological order 生成的，拼接时保证时间顺序
 
 import os
 
@@ -14,7 +29,6 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer, util
 from tqdm import tqdm
 
-from features.build_question_accepted_answer_similarity import build_anchor_lookup
 from utils.paths import ARTIFACT_PATHS
 
 
@@ -39,11 +53,106 @@ def compute_similarity(text_a, text_b, model) -> float:
     return util.cos_sim(embeddings[0], embeddings[1]).cpu().item()
 
 
+def _join_resp_ids(values: pd.Series) -> str:
+    ids = [str(int(v)) for v in values if pd.notna(v)]
+    return "|".join(ids) if ids else np.nan
+
+
+def build_anchor_lookup(human_answer: pd.DataFrame) -> pd.DataFrame:
+    """
+    为每个 question 选择 baseline answer (anchor)。
+
+    优先级：
+    1. 如果有 accepted answer，按现有逻辑选择
+    2. 如果没有 accepted answer，选 netlikeNum 最高的 human answer
+    3. 如果完全没有 human answer，baseline = NaN
+    """
+    # 兼容两种列名
+    accept_col = "is_accepted_answer" if "is_accepted_answer" in human_answer.columns else "accepted"
+    text_col = "human_answer_text" if "human_answer_text" in human_answer.columns else "textLengthCN"
+    metlikes_col = "netlikeNum" if "netlikeNum" in human_answer.columns else "metlikes"
+
+    # 按 questionURL 分组处理
+    records = []
+    for questionURL, group in human_answer.groupby("questionURL"):
+        n_human_answers = len(group)
+
+        # 先尝试找 accepted answers
+        accepted = group[group[accept_col] == 1]
+
+        if len(accepted) > 0:
+            # 有 accepted answer
+            has_accepted = 1
+            n_accepted = len(accepted)
+
+            if n_accepted == 1:
+                chosen = accepted.iloc[[0]]
+                rule = "single_accept"
+            else:
+                # 多个 accepted，选 netlikeNum 最高的
+                max_netlike = accepted[metlikes_col].max()
+                chosen = accepted[accepted[metlikes_col] == max_netlike]
+                if len(chosen) == 1:
+                    rule = "max_metlikes_among_accepted"
+                else:
+                    # 需要拼接，按 resp_id 排序（resp_id 已经是 chronological order）
+                    chosen = chosen.sort_values("resp_id")
+                    rule = "concat_tied_accepted"
+        else:
+            # 没有 accepted answer，选 netlikeNum 最高的
+            has_accepted = 0
+            n_accepted = 0
+
+            max_netlike = group[metlikes_col].max()
+            chosen = group[group[metlikes_col] == max_netlike]
+            if len(chosen) == 1:
+                rule = "max_netlike_no_accept"
+            else:
+                # 需要拼接，按 resp_id 排序
+                chosen = chosen.sort_values("resp_id")
+                rule = "concat_tied_netlike_no_accept"
+
+        # 提取文本并拼接（如果需要）
+        if text_col == "textLengthCN":
+            anchor_text = np.nan
+        else:
+            chosen_texts = chosen[text_col].dropna().astype(str).str.strip()
+            chosen_texts = chosen_texts[chosen_texts != ""]
+            anchor_text = "\n\n".join(chosen_texts.tolist()) if len(chosen_texts) > 0 else np.nan
+
+        # 记录结果
+        records.append({
+            "questionURL": questionURL,
+            "has_accepted_answer": has_accepted,
+            "n_accepted_answers": n_accepted,
+            "anchor_selection_rule": rule,
+            "accepted_resp_id": int(chosen.iloc[0]["resp_id"]) if len(chosen) == 1 else np.nan,
+            "accepted_resp_ids": _join_resp_ids(chosen["resp_id"]),
+            "accepted_anchor_text": anchor_text,
+            "n_human_answers": n_human_answers,
+            "baseline_netlike": chosen[metlikes_col].iloc[0] if len(chosen) > 0 else np.nan,
+        })
+
+    return pd.DataFrame(records)
+
+
 def build() -> pd.DataFrame:
     human_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["human_answer_misq"])
-    anchor_lookup = build_anchor_lookup(human_answer)
+    full_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["full_answer_misq"])
 
-    feature = human_answer[["questionURL", "resp_id", "cmnID", "is_accepted_answer", "human_answer_text"]].copy()
+    # 从 full_answer 中提取 human answer 的文本，merge 到 human_answer
+    human_text = (
+        full_answer[full_answer["answer_source"] == "human_answer"]
+        [["questionURL", "resp_id", "answer_text"]]
+        .rename(columns={"answer_text": "human_answer_text"})
+        .drop_duplicates(["questionURL", "resp_id"])
+    )
+    human_answer_with_text = human_answer.merge(human_text, on=["questionURL", "resp_id"], how="left")
+
+    anchor_lookup = build_anchor_lookup(human_answer_with_text)
+
+    feature = human_answer_with_text[["questionURL", "resp_id", "cmnID", "accepted", "human_answer_text"]].copy()
+    feature = feature.rename(columns={"accepted": "is_accepted_answer"})
     feature = feature.merge(anchor_lookup, on="questionURL", how="left")
 
     feature["SimWithAccept"] = np.nan
@@ -71,6 +180,8 @@ def build() -> pd.DataFrame:
             "anchor_selection_rule",
             "accepted_resp_id",
             "accepted_resp_ids",
+            "n_human_answers",
+            "baseline_netlike",
             "SimWithAccept",
         ]
     ]
