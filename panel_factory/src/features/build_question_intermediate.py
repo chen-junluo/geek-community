@@ -1,11 +1,11 @@
 # Artifact:  intermediate/question
 # 输入:      data/raw/cmn_base.csv, data/raw/cmn_content.csv
-# Grain:     question-level (question_id)
-# Merge keys: question_id, questionURL
+# Grain:     question-level (questionURL)
+# Merge keys: questionURL
 # 输出:      data/features/question_intermediate.csv
 #
-# 逻辑：标准化 question universe，按 chronological contract 生成 stable question_id，
-#       并保留 question metadata + question text，供 question-level features / panels 复用。
+# 逻辑：标准化 question universe，保留 question metadata + question text，
+#       供 question-level features / panels 复用。
 
 import os
 
@@ -40,16 +40,13 @@ def _load_raw_tables(raw_dir: str):
 def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
     question_base, question_text = _load_raw_tables(raw_dir)
 
-    question_base = question_base.reset_index(drop=True)
-    question_base["question_id"] = question_base.index + 1
-
     question = question_base.merge(
         question_text,
         on=["questionURL", "cmnID"],
         how="left",
     )
 
-    ordered_cols = ["question_id", "questionURL", "question_text"]
+    ordered_cols = ["questionURL", "question_text"]
     remaining_cols = [col for col in question.columns if col not in ordered_cols]
     question = question[ordered_cols + remaining_cols]
 

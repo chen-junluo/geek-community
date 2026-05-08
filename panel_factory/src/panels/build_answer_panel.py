@@ -2,8 +2,8 @@
 # 输入:      data/features/human_answer_intermediate.csv
 #            data/features/answer_llm_deviation.csv
 #            data/features/answer_accepted_answer_similarity.csv
-# Grain:     human-answer-level (question_id × resp_id)
-# Merge keys: question_id, resp_id
+# Grain:     human-answer-level (questionURL × resp_id)
+# Merge keys: questionURL, resp_id
 # 输出:      data/panels/answer_panel.csv
 #
 # 职责：读取 human-answer base intermediate，然后在保留 base 全部变量的前提下，late merge 其他 answer-level features，输出 final answer panel。
@@ -38,7 +38,7 @@ def build() -> pd.DataFrame:
     # ── 2. 读取 late-merge feature ─────────────────────────────────────────────
     feat_deviation = pd.read_csv(ARTIFACT_PATHS["features"]["answer_llm_deviation"])
 
-    dev_cols = ["questionURL", "cmnID", "deviation_score",
+    dev_cols = ["questionURL", "resp_id", "deviation_score",
                 "justification", "relationship_label",
                 "prompt_version", "model_name", "error_reason"]
     dev_cols = [c for c in dev_cols if c in feat_deviation.columns]
@@ -51,13 +51,13 @@ def build() -> pd.DataFrame:
         "error_reason": "deviation_error_reason",
     })
 
-    panel = _late_merge_prefer_feature(intermediate, feat_deviation, ["questionURL", "cmnID"])
+    panel = _late_merge_prefer_feature(intermediate, feat_deviation, ["questionURL", "resp_id"])
 
     accept_path = ARTIFACT_PATHS["features"]["answer_accepted_answer_similarity"]
     if os.path.exists(accept_path):
         feat_accept_similarity = pd.read_csv(accept_path)
         accept_cols = [
-            "question_id",
+            "questionURL",
             "resp_id",
             "n_accepted_answers",
             "anchor_selection_rule",
@@ -67,13 +67,13 @@ def build() -> pd.DataFrame:
         ]
         accept_cols = [c for c in accept_cols if c in feat_accept_similarity.columns]
         feat_accept_similarity = feat_accept_similarity[accept_cols].copy()
-        panel = _late_merge_prefer_feature(panel, feat_accept_similarity, ["question_id", "resp_id"])
+        panel = _late_merge_prefer_feature(panel, feat_accept_similarity, ["questionURL", "resp_id"])
     else:
         print(f"跳过 answer_accepted_answer_similarity，文件不存在: {accept_path}")
 
     feat_lexicon = pd.read_csv(ARTIFACT_PATHS["features"]["answer_lexicon_based_answer_metrics"])
     lexicon_cols = [
-        "question_id",
+        "questionURL",
         "resp_id",
         "lexicon_personal_experience_binary",
         "lexicon_personal_experience_match_count",
@@ -83,7 +83,7 @@ def build() -> pd.DataFrame:
     ]
     lexicon_cols = [c for c in lexicon_cols if c in feat_lexicon.columns]
     feat_lexicon = feat_lexicon[lexicon_cols].copy()
-    panel = _late_merge_prefer_feature(panel, feat_lexicon, ["question_id", "resp_id"])
+    panel = _late_merge_prefer_feature(panel, feat_lexicon, ["questionURL", "resp_id"])
 
     # ── 4. 输出 ───────────────────────────────────────────────────────────────
     out_path = ARTIFACT_PATHS["panels"]["answer"]

@@ -37,20 +37,61 @@ Working rules:
   - 例如：`PYTHONPATH=/Users/dylanchen/Desktop/geek-community/panel_factory/src /Users/dylanchen/miniconda3/envs/cityu/bin/python panel_factory/src/panels/build_question_panel.py`
 
 
-- standardized index contract
-  - `question_id`：question-level ID。
-  - `answer_id`：all-answer universe 的 index，包含 AI answer。
-  - `resp_id`：human-response universe 的 index，只给 human answers。
-  - `cmnID == 0` 是 question content，不算 answer。
-  - `cmnID` 不是 chronological order，不能拿来做 sequencing。
-  - 新 index 默认按 `dateID` / chronological order 构造。
-  - 必须强区分 AI answer 与 human answer，不要混用 `answer_id` 与 `resp_id`。
+
+
+---
+---
+## User-Specific Rules
+
+---
+## data grain 层次与 index contract
+
+### 三个核心 grain 层次
+
+1. **Question Level**
+   - Grain: `questionURL`
+   - 定义：每个 question post 作为一个观测单位
+   - Intermediate: `question_intermediate.csv`
+   - 用途：question metadata、question text、question-level features
+   - 禁止使用 `question_id`，唯一标识就是 `questionURL`
+
+2. **Human Answer Level (Response Level)**
+   - Grain: `questionURL × resp_id`
+   - 定义：每个 human-authored answer 作为一个观测单位
+   - Intermediate: `human_answer_intermediate.csv`
+   - Index 构造：按 `questionURL + date + cmnID` chronological order 生成 `resp_id`
+   - 特点：
+     - 只包含 human answers，不包含 AI answers
+     - `resp_id` 从 1 开始递增，表示该 question 下第几个 human answer
+     - `cmnID != 0`（`cmnID == 0` 是 question 本身，不算 answer）
+     - `cmnID` 不是 chronological order，不能直接用于 sequencing
+
+3. **All Answer Level (Full Answer Level)**
+   - Grain: `questionURL × answer_id`
+   - 定义：包含 AI answer + human answers 的完整 answer universe
+   - Intermediate: `full_answer_intermediate.csv`
+   - Index 构造：
+     - AI answer: `answer_id = 1`，`resp_id = NaN`，`answer_source = "AI_answer"`
+     - Human answers: `answer_id = resp_id + has_ai_answer`，`answer_source = "human_answer"`
+   - 特点：
+     - 统一 `answer_text` 字段（AI 用 `ai_answer_text`，human 用 `human_answer_text`）
+     - 必须强区分 AI answer 与 human answer，不要混用 `answer_id` 与 `resp_id`
+     - 如果某个 question 有 AI answer，human answers 的 `answer_id` 会整体 +1
+
+### Index 使用规则
+
+- Question-level features: merge key 是 `questionURL`
+- Human-answer-level features: merge key 是 `questionURL × resp_id`
+- All-answer-level features: merge key 是 `questionURL × answer_id`
+- 新 index 默认按 `dateID` / chronological order 构造
+- `cmnID` 不是 chronological order，不能拿来做 sequencing
 - MISQ sample rule
   - 严格沿用 `Archive/round2_parser_for_panel.ipynb` 的 sample definition。
   - 先在 question rows 上筛：`ask == 1` 且 `date >= 2023-01-01`。
   - 再按 `questionURL` 保留这些 questions 对应的 whole thread。
   - MISQ-specific intermediates / features / panels 必须只在这个 universe 内计算与 merge。
   - 默认不要直接覆盖通用 panel builder，优先新增 `*_MISQ` builders 明确语义。
+  
 - **default version rule**
   - 当前默认使用带 `_MISQ` 后缀的 intermediates 和 panels。
   - 所有新 feature、新 panel、新 project 默认基于 MISQ 版本构建。

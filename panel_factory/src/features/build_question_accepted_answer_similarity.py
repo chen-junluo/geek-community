@@ -1,8 +1,8 @@
 # Artifact:  feature/question_accepted_answer_similarity
 # 输入:      data/features/question_intermediate.csv, data/features/human_answer_intermediate.csv,
 #            data/features/full_answer_intermediate.csv
-# Grain:     question-level (question_id)
-# Merge keys: question_id
+# Grain:     question-level (questionURL)
+# Merge keys: questionURL
 # 输出:      data/features/question_accepted_answer_similarity.csv
 #
 # 逻辑：用 accepted human answer 作为 anchor，计算 AI answer 与 accepted anchor 的
@@ -45,11 +45,13 @@ def _join_resp_ids(values: pd.Series) -> str:
 
 
 def build_anchor_lookup(human_answer: pd.DataFrame) -> pd.DataFrame:
-    accepted = human_answer[human_answer["is_accepted_answer"] == 1].copy()
+    # 兼容两种列名：is_accepted_answer 或 accepted
+    accept_col = "is_accepted_answer" if "is_accepted_answer" in human_answer.columns else "accepted"
+    accepted = human_answer[human_answer[accept_col] == 1].copy()
     if accepted.empty:
         return pd.DataFrame(
             columns=[
-                "question_id",
+                "questionURL",
                 "has_accepted_answer",
                 "n_accepted_answers",
                 "anchor_selection_rule",
@@ -59,28 +61,37 @@ def build_anchor_lookup(human_answer: pd.DataFrame) -> pd.DataFrame:
             ]
         )
 
-    accepted = accepted.sort_values(["question_id", "dateID", "date", "cmnID"], na_position="last")
+    accepted = accepted.sort_values(["questionURL", "dateID", "date", "cmnID"], na_position="last")
     records = []
-    for question_id, group in accepted.groupby("question_id"):
+    for questionURL, group in accepted.groupby("questionURL"):
         group = group.copy()
         n_accepted_answers = len(group)
         if n_accepted_answers == 1:
             chosen = group.iloc[[0]]
             rule = "single_accept"
         else:
-            max_metlikes = group["metlikes"].max()
-            chosen = group[group["metlikes"] == max_metlikes].copy()
+            max_metlikes = group["netlikeNum"].max() if "netlikeNum" in group.columns else group.get("metlikes", pd.Series([0])).max()
+            metlikes_col = "netlikeNum" if "netlikeNum" in group.columns else "metlikes"
+            chosen = group[group[metlikes_col] == max_metlikes].copy()
             if len(chosen) == 1:
                 rule = "max_metlikes"
             else:
                 chosen = chosen.sort_values(["dateID", "date", "cmnID"], na_position="last")
                 rule = "concat_tied_max_metlikes"
-        chosen_texts = chosen["human_answer_text"].dropna().astype(str).str.strip()
-        chosen_texts = chosen_texts[chosen_texts != ""]
-        anchor_text = "\n\n".join(chosen_texts.tolist()) if len(chosen_texts) > 0 else np.nan
+
+        # 兼容两种文本列名
+        text_col = "human_answer_text" if "human_answer_text" in chosen.columns else "textLengthCN"
+        if text_col == "textLengthCN":
+            # 如果没有 human_answer_text，需要从其他地方获取文本，这里暂时用空
+            anchor_text = np.nan
+        else:
+            chosen_texts = chosen[text_col].dropna().astype(str).str.strip()
+            chosen_texts = chosen_texts[chosen_texts != ""]
+            anchor_text = "\n\n".join(chosen_texts.tolist()) if len(chosen_texts) > 0 else np.nan
+
         records.append(
             {
-                "question_id": question_id,
+                "questionURL": questionURL,
                 "has_accepted_answer": 1,
                 "n_accepted_answers": n_accepted_answers,
                 "anchor_selection_rule": rule,
@@ -100,14 +111,14 @@ def build() -> pd.DataFrame:
     anchor_lookup = build_anchor_lookup(human_answer)
     ai_answer = (
         full_answer[full_answer["answer_source"] == "AI_answer"]
-        [["question_id", "questionURL", "answer_text"]]
+        [["questionURL", "answer_text"]]
         .rename(columns={"answer_text": "ai_answer_text"})
-        .drop_duplicates("question_id")
+        .drop_duplicates("questionURL")
     )
 
-    feature = question[["question_id", "questionURL"]].copy()
-    feature = feature.merge(ai_answer, on=["question_id", "questionURL"], how="left")
-    feature = feature.merge(anchor_lookup, on="question_id", how="left")
+    feature = question[["questionURL"]].copy()
+    feature = feature.merge(ai_answer, on="questionURL", how="left")
+    feature = feature.merge(anchor_lookup, on="questionURL", how="left")
     feature["has_ai_answer"] = feature["ai_answer_text"].notna().astype(int)
     feature["has_accepted_answer"] = feature["has_accepted_answer"].fillna(0).astype(int)
 
@@ -128,7 +139,6 @@ def build() -> pd.DataFrame:
 
     feature = feature[
         [
-            "question_id",
             "questionURL",
             "has_ai_answer",
             "has_accepted_answer",

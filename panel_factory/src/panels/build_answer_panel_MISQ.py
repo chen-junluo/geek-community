@@ -1,8 +1,8 @@
 # Artifact:  panel/answer_panel_MISQ
 # 输入:      data/features/human_answer_intermediate_MISQ.csv
 #            data/features/answer_accepted_answer_similarity_MISQ.csv
-# Grain:     human-answer-level (question_id × resp_id)
-# Merge keys: question_id, resp_id
+# Grain:     human-answer-level (questionURL × resp_id)
+# Merge keys: questionURL, resp_id
 # 输出:      data/panels/answer_panel_MISQ.csv
 #
 # 职责：读取 MISQ human-answer intermediate，在 MISQ universe 内 late merge feature，输出 MISQ final panel。
@@ -33,7 +33,7 @@ def build() -> pd.DataFrame:
 
     feat_accept_similarity = pd.read_csv(ARTIFACT_PATHS["features"]["answer_accepted_answer_similarity_misq"])
     accept_cols = [
-        "question_id",
+        "questionURL",
         "resp_id",
         "n_accepted_answers",
         "anchor_selection_rule",
@@ -46,7 +46,7 @@ def build() -> pd.DataFrame:
 
     feat_llm_extension = pd.read_csv(ARTIFACT_PATHS["features"]["answer_llm_extension"])
     llm_extension_cols = [
-        "question_id",
+        "questionURL",
         "resp_id",
         "is_treatment",
         "anchor_source",
@@ -73,7 +73,7 @@ def build() -> pd.DataFrame:
 
     feat_llm_deviation = pd.read_csv(ARTIFACT_PATHS["features"]["answer_llm_deviation"])
     llm_deviation_cols = [
-        "question_id",
+        "questionURL",
         "resp_id",
         "deviation_score",
         "justification",
@@ -94,7 +94,7 @@ def build() -> pd.DataFrame:
 
     feat_lexicon = pd.read_csv(ARTIFACT_PATHS["features"]["answer_lexicon_based_answer_metrics"])
     lexicon_cols = [
-        "question_id",
+        "questionURL",
         "resp_id",
         "lexicon_personal_experience_binary",
         "lexicon_personal_experience_match_count",
@@ -105,10 +105,10 @@ def build() -> pd.DataFrame:
     lexicon_cols = [c for c in lexicon_cols if c in feat_lexicon.columns]
     feat_lexicon = feat_lexicon[lexicon_cols].copy()
 
-    panel = _late_merge_prefer_feature(intermediate, feat_accept_similarity, ["question_id", "resp_id"])
-    panel = _late_merge_prefer_feature(panel, feat_llm_extension, ["question_id", "resp_id"])
-    panel = _late_merge_prefer_feature(panel, feat_llm_deviation, ["question_id", "resp_id"])
-    panel = _late_merge_prefer_feature(panel, feat_lexicon, ["question_id", "resp_id"])
+    panel = _late_merge_prefer_feature(intermediate, feat_accept_similarity, ["questionURL", "resp_id"])
+    panel = _late_merge_prefer_feature(panel, feat_llm_extension, ["questionURL", "resp_id"])
+    panel = _late_merge_prefer_feature(panel, feat_llm_deviation, ["questionURL", "resp_id"])
+    panel = _late_merge_prefer_feature(panel, feat_lexicon, ["questionURL", "resp_id"])
 
     out_path = ARTIFACT_PATHS["panels"]["answer_misq"]
     os.makedirs(os.path.dirname(out_path), exist_ok=True)

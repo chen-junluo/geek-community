@@ -1,8 +1,8 @@
 # Artifact:  feature/answer_llm_deviation
 # 输入:      data/features/question_intermediate_MISQ.csv, data/features/human_answer_intermediate_MISQ.csv,
 #            data/features/full_answer_intermediate_MISQ.csv
-# Grain:     human-answer-level (question_id × resp_id)
-# Merge keys: question_id, resp_id
+# Grain:     human-answer-level (questionURL × resp_id)
+# Merge keys: questionURL, resp_id
 # 输出:      data/features/answer_llm_deviation.csv
 #
 # 逻辑：在 MISQ human-response universe 内，对每个 human answer pair（earlier answer vs later answer），
@@ -104,7 +104,7 @@ def _truncate_text(text: str, max_chars: int = MAX_TEXT_CHARS) -> str:
     return text[:half] + f"\n\n... [中间省略约{len(text) - max_chars}字] ...\n\n" + text[-half:]
 
 
-def _extract_question_id(question_url: str) -> str:
+def _extract_url_id(question_url: str) -> str:
     if not isinstance(question_url, str):
         return "unknown_question"
     match = re.search(r"(\d+)(?:/)?$", question_url.strip())
@@ -121,7 +121,7 @@ def _comparison_label(row: pd.Series) -> str:
 
 
 def _build_cache_key(row: pd.Series) -> str:
-    return f"q_{_extract_question_id(row['questionURL'])}__{_comparison_label(row)}"
+    return f"q_{_extract_url_id(row['questionURL'])}__{_comparison_label(row)}"
 
 
 def _normalize_relationship_label(deviation_score: Optional[int], relationship_label: Optional[str]) -> Optional[str]:
@@ -226,20 +226,20 @@ def prepare_eval_panel(
     human_answer: pd.DataFrame,
     full_answer: pd.DataFrame,
 ) -> pd.DataFrame:
-    question_rows = question[["question_id", "questionURL", "question_text"]].drop_duplicates("question_id")
+    question_rows = question[["questionURL", "question_text"]].drop_duplicates("questionURL")
     ai_rows = (
         full_answer[full_answer["answer_source"] == "AI_answer"]
-        [["question_id", "answer_text"]]
+        [["questionURL", "answer_text"]]
         .rename(columns={"answer_text": "ai_answer_text"})
-        .drop_duplicates("question_id")
+        .drop_duplicates("questionURL")
     )
     first_human = (
         human_answer[human_answer["human_answer_text"].notna()]
-        .sort_values(["question_id", "dateID", "date", "cmnID"], na_position="last")
-        .groupby("question_id")
+        .sort_values(["questionURL", "dateID", "date", "cmnID"], na_position="last")
+        .groupby("questionURL")
         .first()
         .reset_index()
-        [["question_id", "resp_id", "cmnID", "dateID", "human_answer_text"]]
+        [["questionURL", "resp_id", "cmnID", "dateID", "human_answer_text"]]
         .rename(columns={
             "resp_id": "first_human_resp_id",
             "cmnID": "first_human_cmnID",
@@ -250,9 +250,9 @@ def prepare_eval_panel(
 
     panel = (
         human_answer[human_answer["human_answer_text"].notna()].copy()
-        .merge(question_rows, on=["question_id", "questionURL"], how="left")
-        .merge(ai_rows, on="question_id", how="left")
-        .merge(first_human, on="question_id", how="left")
+        .merge(question_rows, on="questionURL", how="left")
+        .merge(ai_rows, on="questionURL", how="left")
+        .merge(first_human, on="questionURL", how="left")
     )
     panel["is_treatment"] = panel["ai_answer_text"].notna().astype(int)
     panel["anchor_source"] = np.where(panel["is_treatment"] == 1, "AI_answer", "first_human_answer")
@@ -278,7 +278,7 @@ def prepare_eval_panel(
     panel["cache_key"] = panel.apply(_build_cache_key, axis=1)
 
     return panel[[
-        "question_id", "questionURL", "resp_id", "comparison_target",
+        "questionURL", "resp_id", "comparison_target",
         "cmnID", "dateID", "date", "accept", "is_treatment",
         "anchor_source", "anchor_resp_id", "anchor_cmnID", "anchor_dateID",
         "question_text", "earlier_answer_text", "later_answer_text",
@@ -369,7 +369,7 @@ def build() -> pd.DataFrame:
     result_df = pd.DataFrame(eval_results)
     output = eval_panel.merge(result_df, on="cache_key", how="left")
 
-    feature_cols = ["question_id", "questionURL", "resp_id", "cmnID", "dateID", "is_treatment", "anchor_source",
+    feature_cols = ["questionURL", "resp_id", "cmnID", "dateID", "is_treatment", "anchor_source",
                     "anchor_resp_id", "anchor_cmnID", "anchor_dateID", "comparison_target",
                     "deviation_score", "justification", "relationship_label",
                     "prompt_version", "model_name", "error_reason"]

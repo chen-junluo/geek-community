@@ -1,7 +1,7 @@
 # Artifact:  feature/answer_lexicon_based_answer_metrics
-# 输入:      data/features/human_answer_intermediate_MISQ.csv
-# Grain:     human-answer-level (question_id × resp_id)
-# Merge keys: question_id, resp_id
+# 输入:      data/features/human_answer_intermediate_MISQ.csv, data/features/full_answer_intermediate_MISQ.csv
+# Grain:     human-answer-level (questionURL × resp_id)
+# Merge keys: questionURL, resp_id
 # 输出:      data/features/answer_lexicon_based_answer_metrics.csv
 #
 # 逻辑：在 MISQ human-response universe 内，用中文技术社区语境下的 rule-based lexicon
@@ -111,8 +111,18 @@ def _detect_personal_experience(text) -> tuple[int, int, str]:
 
 def build() -> pd.DataFrame:
     human_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["human_answer_misq"])
+    full_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["full_answer_misq"])
 
-    feature = human_answer[["question_id", "resp_id", "questionURL", "cmnID", "human_answer_text"]].copy()
+    # 从 full_answer 中提取 human answer 的文本
+    human_text = (
+        full_answer[full_answer["answer_source"] == "human_answer"]
+        [["questionURL", "resp_id", "answer_text"]]
+        .drop_duplicates(["questionURL", "resp_id"])
+    )
+
+    feature = human_answer[["questionURL", "resp_id", "cmnID"]].copy()
+    feature = feature.merge(human_text, on=["questionURL", "resp_id"], how="left")
+    feature = feature.rename(columns={"answer_text": "human_answer_text"})
 
     detected = feature["human_answer_text"].apply(_detect_personal_experience)
     feature[[
@@ -125,9 +135,8 @@ def build() -> pd.DataFrame:
     feature["lexicon_personal_experience_version"] = VERSION
 
     feature = feature[[
-        "question_id",
-        "resp_id",
         "questionURL",
+        "resp_id",
         "cmnID",
         "lexicon_personal_experience_binary",
         "lexicon_personal_experience_match_count",

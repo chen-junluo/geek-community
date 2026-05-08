@@ -1,7 +1,7 @@
 # Artifact:  intermediate/full_answer
-# 输入:      data/features/human_answer_intermediate.csv, data/raw/question_ai_content.csv
-# Grain:     answer-level (question_id × answer_id)
-# Merge keys: question_id, answer_id
+# 输入:      data/features/human_answer_intermediate.csv, data/raw/question_ai_content.csv, data/raw/cmn_content.csv
+# Grain:     answer-level (questionURL × answer_id)
+# Merge keys: questionURL, answer_id
 # 输出:      data/features/full_answer_intermediate.csv
 #
 # 逻辑：标准化 all-answer universe。answer_id 覆盖 AI + human answers，
@@ -40,8 +40,9 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
     question = pd.read_csv(ARTIFACT_PATHS["intermediate"]["question"])
     human_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["human_answer"])
     question_ai_content = pd.read_csv(os.path.join(raw_dir, "question_ai_content.csv"))
+    cmn_content = pd.read_csv(os.path.join(raw_dir, "cmn_content.csv"))
 
-    ai_rows = question[["question_id", "questionURL"]].merge(
+    ai_rows = question[["questionURL"]].merge(
         question_ai_content,
         on="questionURL",
         how="left",
@@ -62,8 +63,17 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
     ai_rows["cmnID"] = np.nan
 
     human_rows = human_answer.copy()
-    has_ai_map = ai_rows[["question_id"]].drop_duplicates().assign(has_ai_answer=1)
-    human_rows = human_rows.merge(has_ai_map, on="question_id", how="left")
+    # Merge human answer text from cmn_content
+    human_text = cmn_content[["questionURL", "cmnID", "content_full_text", "content_code_text"]].copy()
+    human_rows = human_rows.merge(
+        human_text,
+        on=["questionURL", "cmnID"],
+        how="left",
+    )
+    human_rows = human_rows.rename(columns={"content_full_text": "human_answer_text"})
+
+    has_ai_map = ai_rows[["questionURL"]].drop_duplicates().assign(has_ai_answer=1)
+    human_rows = human_rows.merge(has_ai_map, on="questionURL", how="left")
     human_rows["has_ai_answer"] = human_rows["has_ai_answer"].fillna(0).astype(int)
     human_rows["answer_id"] = human_rows["resp_id"] + human_rows["has_ai_answer"]
     human_rows["answer_source"] = "human_answer"
@@ -72,7 +82,6 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
     human_rows["answer_text"] = human_rows["human_answer_text"]
 
     keep_cols = [
-        "question_id",
         "questionURL",
         "answer_id",
         "answer_source",
@@ -94,7 +103,7 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
 
     full_answer = pd.concat([ai_rows, human_rows], ignore_index=True, sort=False)
     full_answer = full_answer.sort_values(
-        ["question_id", "answer_id", "dateID", "cmnID"],
+        ["questionURL", "answer_id", "dateID", "cmnID"],
         na_position="last",
     ).reset_index(drop=True)
 

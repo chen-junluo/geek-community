@@ -1,7 +1,7 @@
 # Artifact:  feature/answer_accepted_answer_similarity_MISQ
 # 输入:      data/features/human_answer_intermediate_MISQ.csv
-# Grain:     human-answer-level (question_id × resp_id)
-# Merge keys: question_id, resp_id
+# Grain:     human-answer-level (questionURL × resp_id)
+# Merge keys: questionURL, resp_id
 # 输出:      data/features/answer_accepted_answer_similarity_MISQ.csv
 #
 # 逻辑：在 MISQ universe 内，用 accepted human answer 作为 anchor，计算每个 human answer 与 anchor 的
@@ -43,8 +43,8 @@ def build() -> pd.DataFrame:
     human_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["human_answer_misq"])
     anchor_lookup = build_anchor_lookup(human_answer)
 
-    feature = human_answer[["question_id", "questionURL", "resp_id", "cmnID", "is_accepted_answer", "human_answer_text"]].copy()
-    feature = feature.merge(anchor_lookup, on="question_id", how="left")
+    feature = human_answer[["questionURL", "resp_id", "cmnID", "is_accepted_answer", "human_answer_text"]].copy()
+    feature = feature.merge(anchor_lookup, on="questionURL", how="left")
 
     feature["SimWithAccept"] = np.nan
     valid = (
@@ -63,7 +63,6 @@ def build() -> pd.DataFrame:
 
     feature = feature[
         [
-            "question_id",
             "questionURL",
             "resp_id",
             "cmnID",

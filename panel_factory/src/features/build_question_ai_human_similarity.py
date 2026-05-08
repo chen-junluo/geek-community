@@ -1,8 +1,8 @@
 # Artifact:  feature/question_ai_human_similarity
 # 输入:      data/features/question_intermediate_MISQ.csv, data/features/human_answer_intermediate_MISQ.csv,
 #            data/features/full_answer_intermediate_MISQ.csv
-# Grain:     question-level (question_id)
-# Merge keys: question_id, questionURL
+# Grain:     question-level (questionURL)
+# Merge keys: questionURL
 # 输出:      data/features/question_ai_human_similarity.csv
 #
 # 逻辑：在 MISQ universe 内，对每个 question，用 sentence-transformers 计算三个 cosine similarity：
@@ -50,18 +50,16 @@ def build_question_level_similarity(
     ai_lookup: pd.Series,
     model,
 ) -> pd.Series:
-    question_id = group.name
-    question_url = group["questionURL"].iloc[0]
+    question_url = group.name
 
     human_answers = group[group["content_full_text"].notna()].sort_values("dateID")
     first_human_text = human_answers.iloc[0]["content_full_text"] if len(human_answers) >= 1 else np.nan
     second_human_text = human_answers.iloc[1]["content_full_text"] if len(human_answers) >= 2 else np.nan
 
-    ai_text = ai_lookup.get(question_id)
+    ai_text = ai_lookup.get(question_url)
     is_treatment = pd.notna(ai_text) and str(ai_text).strip() != ""
 
     result = {
-        "question_id": question_id,
         "questionURL": question_url,
         "group_type": "treatment" if is_treatment else "control",
         "n_human_answers": len(human_answers),
@@ -85,22 +83,22 @@ def build() -> pd.DataFrame:
 
     ai_lookup = (
         full_answer[full_answer["answer_source"] == "AI_answer"]
-        [["question_id", "answer_text"]]
-        .drop_duplicates("question_id")
-        .set_index("question_id")["answer_text"]
+        [["questionURL", "answer_text"]]
+        .drop_duplicates("questionURL")
+        .set_index("questionURL")["answer_text"]
     )
 
     model = _load_model()
     tqdm.pandas(desc="Computing question-level similarity")
 
     feature = (
-        human_answer.groupby("question_id")
+        human_answer.groupby("questionURL")
         .progress_apply(lambda g: build_question_level_similarity(g, ai_lookup, model))
         .reset_index(drop=True)
     )
-    feature = question[["question_id", "questionURL"]].merge(
+    feature = question[["questionURL"]].merge(
         feature,
-        on=["question_id", "questionURL"],
+        on="questionURL",
         how="left",
     )
 

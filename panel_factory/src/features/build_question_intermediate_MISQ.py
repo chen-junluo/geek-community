@@ -1,7 +1,7 @@
 # Artifact:  intermediate/question_MISQ
 # 输入:      data/features/question_intermediate.csv
-# Grain:     question-level (question_id)
-# Merge keys: question_id, questionURL
+# Grain:     question-level (questionURL)
+# Merge keys: questionURL
 # 输出:      data/features/question_intermediate_MISQ.csv
 #
 # 逻辑：严格沿用 round2_parser_for_panel.ipynb 的 sample definition。

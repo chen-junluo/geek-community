@@ -39,3 +39,9 @@
 ## 4. Local override
 - 如果某个 project、stage 或更低层级目录下存在自己的 `CLAUDE.md`，则该局部说明优先级更高
 - 如用户在当前任务中给出更具体要求，以用户要求为准
+
+---
+---
+## User-Specific Rules
+
+<!-- 在此添加你的项目特定规则 -->

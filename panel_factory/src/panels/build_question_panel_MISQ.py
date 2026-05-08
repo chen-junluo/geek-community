@@ -1,8 +1,8 @@
 # Artifact:  panel/question_panel_MISQ
 # 输入:      data/features/question_intermediate_MISQ.csv
 #            data/features/question_accepted_answer_similarity_MISQ.csv
-# Grain:     question-level (question_id)
-# Merge keys: question_id
+# Grain:     question-level (questionURL)
+# Merge keys: questionURL
 # 输出:      data/panels/question_panel_MISQ.csv
 #
 # 职责：读取 MISQ question intermediate，在 MISQ universe 内 late merge feature，输出 MISQ final panel。
@@ -33,7 +33,7 @@ def build() -> pd.DataFrame:
 
     feat_accept_similarity = pd.read_csv(ARTIFACT_PATHS["features"]["question_accepted_answer_similarity_misq"])
     accept_cols = [
-        "question_id",
+        "questionURL",
         "has_ai_answer",
         "has_accepted_answer",
         "n_accepted_answers",
@@ -47,7 +47,7 @@ def build() -> pd.DataFrame:
 
     feat_ai_human_similarity = pd.read_csv(ARTIFACT_PATHS["features"]["question_ai_human_similarity"])
     ai_human_cols = [
-        "question_id",
+        "questionURL",
         "group_type",
         "n_human_answers",
         "human1_human2_similarity",
@@ -59,7 +59,7 @@ def build() -> pd.DataFrame:
 
     feat_ai_human_code_similarity = pd.read_csv(ARTIFACT_PATHS["features"]["question_ai_human_code_similarity"])
     ai_human_code_cols = [
-        "question_id",
+        "questionURL",
         "human1_human2_code_similarity",
         "ai_human1_code_similarity",
         "ai_human2_code_similarity",
@@ -69,7 +69,7 @@ def build() -> pd.DataFrame:
 
     feat_jaccard = pd.read_csv(ARTIFACT_PATHS["features"]["question_content_jaccard_overlap"])
     jaccard_cols = [
-        "question_id",
+        "questionURL",
         "jaccard_h1_h2",
         "jaccard_ai_h2",
         "jaccard_ans1_ans2",
@@ -82,18 +82,18 @@ def build() -> pd.DataFrame:
 
     feat_pairwise = pd.read_csv(ARTIFACT_PATHS["features"]["question_human_pairwise_similarity"])
     pairwise_cols = [
-        "question_id",
+        "questionURL",
         "n_human_answers_used",
         "human_pairwise_similarity_mean",
     ]
     pairwise_cols = [c for c in pairwise_cols if c in feat_pairwise.columns]
     feat_pairwise = feat_pairwise[pairwise_cols].copy()
 
-    panel = _late_merge_prefer_feature(intermediate, feat_accept_similarity, ["question_id"])
-    panel = _late_merge_prefer_feature(panel, feat_ai_human_similarity, ["question_id"])
-    panel = _late_merge_prefer_feature(panel, feat_ai_human_code_similarity, ["question_id"])
-    panel = _late_merge_prefer_feature(panel, feat_jaccard, ["question_id"])
-    panel = _late_merge_prefer_feature(panel, feat_pairwise, ["question_id"])
+    panel = _late_merge_prefer_feature(intermediate, feat_accept_similarity, ["questionURL"])
+    panel = _late_merge_prefer_feature(panel, feat_ai_human_similarity, ["questionURL"])
+    panel = _late_merge_prefer_feature(panel, feat_ai_human_code_similarity, ["questionURL"])
+    panel = _late_merge_prefer_feature(panel, feat_jaccard, ["questionURL"])
+    panel = _late_merge_prefer_feature(panel, feat_pairwise, ["questionURL"])
 
     out_path = ARTIFACT_PATHS["panels"]["question_misq"]
     os.makedirs(os.path.dirname(out_path), exist_ok=True)

@@ -1,8 +1,8 @@
 # Artifact:  feature/question_content_jaccard_overlap
 # 输入:      data/features/question_intermediate_MISQ.csv, data/features/human_answer_intermediate_MISQ.csv,
 #            data/features/full_answer_intermediate_MISQ.csv
-# Grain:     question-level (question_id)
-# Merge keys: question_id, questionURL
+# Grain:     question-level (questionURL)
+# Merge keys: questionURL
 # 输出:      data/features/question_content_jaccard_overlap.csv
 #
 # 逻辑：在 MISQ universe 内，对每个 question，用 token-set Jaccard overlap 计算六个变量：
@@ -95,11 +95,10 @@ def _build_overlap_triplet(h1_text, h2_text, ai_text, is_treatment: bool):
 # ── Per-question builder ────────────────────────────────────────────────────
 
 def build_question_level_overlap(group: pd.DataFrame, ai_full_lookup: pd.Series, ai_code_lookup: pd.Series) -> pd.Series:
-    question_id = group.name
-    question_url = group["questionURL"].iloc[0]
+    question_url = group.name
 
-    ai_full = ai_full_lookup.get(question_id)
-    ai_code = ai_code_lookup.get(question_id)
+    ai_full = ai_full_lookup.get(question_url)
+    ai_code = ai_code_lookup.get(question_url)
 
     h1_full, h2_full, ai_full, n_human_answers = _extract_pair_texts(
         group,
@@ -123,7 +122,6 @@ def build_question_level_overlap(group: pd.DataFrame, ai_full_lookup: pd.Series,
 
     return pd.Series(
         {
-            "question_id": question_id,
             "questionURL": question_url,
             "group_type": "treatment" if is_treatment else "control",
             "n_human_answers": n_human_answers,
@@ -146,27 +144,27 @@ def build() -> pd.DataFrame:
 
     ai_full_lookup = (
         full_answer[full_answer["answer_source"] == "AI_answer"]
-        [["question_id", "answer_text"]]
-        .drop_duplicates("question_id")
-        .set_index("question_id")["answer_text"]
+        [["questionURL", "answer_text"]]
+        .drop_duplicates("questionURL")
+        .set_index("questionURL")["answer_text"]
     )
     ai_code_lookup = (
         full_answer[full_answer["answer_source"] == "AI_answer"]
-        [["question_id", "content_code_text"]]
-        .drop_duplicates("question_id")
-        .set_index("question_id")["content_code_text"]
+        [["questionURL", "content_code_text"]]
+        .drop_duplicates("questionURL")
+        .set_index("questionURL")["content_code_text"]
     )
 
     tqdm.pandas(desc="Computing question-level Jaccard overlap")
 
     feature = (
-        human_answer.groupby("question_id")
+        human_answer.groupby("questionURL")
         .progress_apply(lambda g: build_question_level_overlap(g, ai_full_lookup, ai_code_lookup))
         .reset_index(drop=True)
     )
-    feature = question[["question_id", "questionURL"]].merge(
+    feature = question[["questionURL"]].merge(
         feature,
-        on=["question_id", "questionURL"],
+        on="questionURL",
         how="left",
     )
 

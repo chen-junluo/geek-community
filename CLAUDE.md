@@ -69,3 +69,33 @@
   - 中文简洁描述内容，technical terms 用 English。
   - 当结构不清晰时，先列 inventory，再提 reconstruction plan。
   - 优先尊重已有 artifact names、merge keys、output boundaries，再逐步优化。
+
+---
+## 5. 同步 upstream CLAUDE.md 更新
+
+- 如果用户 fork 了这个 template 并想同步上游的 `CLAUDE.md` 更新，运行 `./scripts/sync-claude-md.sh`
+- 工作原理：
+  - 所有 `CLAUDE.md` 文件分为两部分：`## User-Specific Rules` marker 之前是 upstream 规则，之后是用户自定义规则
+  - sync script 会从 upstream 拉取最新规则，替换 marker 之前的部分，保留 marker 之后的用户规则
+- 使用步骤：
+  ```bash
+  # 首次设置（如果还没有 upstream remote）
+  git remote add upstream https://github.com/chen-junluo/smart_research_folder_template.git
+
+  # 同步更新
+  ./scripts/sync-claude-md.sh
+
+  # 检查变更
+  git diff
+
+  # 提交
+  git add .
+  git commit -m "Sync CLAUDE.md from upstream"
+  ```
+- 当用户要求同步 CLAUDE.md 或更新 upstream 规则时，直接运行这个 script
+
+---
+---
+## User-Specific Rules
+
+<!-- 在此添加你的项目特定规则 -->

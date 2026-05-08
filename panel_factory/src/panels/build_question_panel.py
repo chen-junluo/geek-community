@@ -4,8 +4,8 @@
 #            data/features/question_human_pairwise_similarity.csv
 #            data/features/question_content_jaccard_overlap.csv
 #            data/features/question_accepted_answer_similarity.csv
-# Grain:     question-level (question_id)
-# Merge keys: question_id
+# Grain:     question-level (questionURL)
+# Merge keys: questionURL
 # 输出:      data/panels/question_panel.csv
 #
 # 职责：读取 question-level base intermediate，然后在保留 base 全部变量的前提下，late merge 其他 question-level features，输出 final question panel。
@@ -67,7 +67,7 @@ def build() -> pd.DataFrame:
 
     feat_accept_similarity = pd.read_csv(ARTIFACT_PATHS["features"]["question_accepted_answer_similarity"])
     accept_cols = [
-        "question_id",
+        "questionURL",
         "has_ai_answer",
         "has_accepted_answer",
         "n_accepted_answers",
@@ -83,7 +83,7 @@ def build() -> pd.DataFrame:
     panel = _late_merge_prefer_feature(intermediate, feat_code_similarity, ["questionURL"])
     panel = _late_merge_prefer_feature(panel, feat_pairwise, ["questionURL"])
     panel = _late_merge_prefer_feature(panel, feat_jaccard, ["questionURL"])
-    panel = _late_merge_prefer_feature(panel, feat_accept_similarity, ["question_id"])
+    panel = _late_merge_prefer_feature(panel, feat_accept_similarity, ["questionURL"])
 
     # ── 4. 输出 ───────────────────────────────────────────────────────────────
     out_path = ARTIFACT_PATHS["panels"]["question"]

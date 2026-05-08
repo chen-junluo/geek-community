@@ -1,8 +1,8 @@
 # Artifact:  feature/question_human_pairwise_similarity
 # 输入:      data/features/question_intermediate_MISQ.csv, data/features/human_answer_intermediate_MISQ.csv,
 #            data/features/full_answer_intermediate_MISQ.csv
-# Grain:     question-level (question_id)
-# Merge keys: question_id, questionURL
+# Grain:     question-level (questionURL)
+# Merge keys: questionURL
 # 输出:      data/features/question_human_pairwise_similarity.csv
 #
 # 逻辑：在 MISQ universe 内：
@@ -53,14 +53,14 @@ def build_question_pairwise(
     ai_lookup: pd.Series,
     model,
 ) -> pd.Series:
-    question_id = group.name
+    question_url = group.name
     question_url = group["questionURL"].iloc[0]
 
     human_answers = group[group["content_full_text"].notna()].sort_values("dateID")
     human_texts = human_answers["content_full_text"].astype(str).str.strip().tolist()
     human_texts = [t for t in human_texts if t]
 
-    ai_text = ai_lookup.get(question_id)
+    ai_text = ai_lookup.get(question_url)
     is_treat = pd.notna(ai_text) and str(ai_text).strip() != ""
 
     if is_treat:
@@ -71,7 +71,6 @@ def build_question_pairwise(
     sim = _pairwise_mean_similarity(candidate_texts, model)
 
     return pd.Series({
-        "question_id": question_id,
         "questionURL": question_url,
         "group_type": "treatment" if is_treat else "control",
         "n_human_answers": len(human_texts),
@@ -89,22 +88,22 @@ def build() -> pd.DataFrame:
 
     ai_lookup = (
         full_answer[full_answer["answer_source"] == "AI_answer"]
-        [["question_id", "answer_text"]]
-        .drop_duplicates("question_id")
-        .set_index("question_id")["answer_text"]
+        [["questionURL", "answer_text"]]
+        .drop_duplicates("questionURL")
+        .set_index("questionURL")["answer_text"]
     )
 
     model = _load_model()
     tqdm.pandas(desc="Computing pairwise similarity")
 
     feature = (
-        human_answer.groupby("question_id")
+        human_answer.groupby("questionURL")
         .progress_apply(lambda g: build_question_pairwise(g, ai_lookup, model))
         .reset_index(drop=True)
     )
-    feature = question[["question_id", "questionURL"]].merge(
+    feature = question[["questionURL"]].merge(
         feature,
-        on=["question_id", "questionURL"],
+        on="questionURL",
         how="left",
     )
 

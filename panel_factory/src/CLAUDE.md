@@ -34,6 +34,13 @@
   - 不需要把描述性统计和sample什么的存成csv，直接在对话中告诉我。
 
 
+
+
+---
+---
+## User-Specific Rules
+
+
 - 运行 python 脚本
   - 不要直接从脚本文件路径裸调用 Python，否则可能报 `ModuleNotFoundError`。
   - 默认用 notebook 对应的解释器，并在 workspace 根目录下设置 `PYTHONPATH=/Users/dylanchen/Desktop/geek-community/panel_factory/src` 后再运行。
