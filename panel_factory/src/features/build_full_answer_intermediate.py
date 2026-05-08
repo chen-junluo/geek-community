@@ -95,8 +95,7 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
         "ai_answer_code_text",
         "content_code_text",
         "answer_text",
-        "metlikes",
-        "accept",
+        "netlikeNum",
     ]
     ai_rows = ai_rows[[col for col in keep_cols if col in ai_rows.columns]].copy()
     human_rows = human_rows[[col for col in keep_cols if col in human_rows.columns]].copy()

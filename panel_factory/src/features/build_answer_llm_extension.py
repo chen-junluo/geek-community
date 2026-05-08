@@ -279,7 +279,7 @@ def prepare_eval_panel(
 
     return panel[[
         "questionURL", "resp_id", "comparison_target",
-        "cmnID", "dateID", "date", "accept", "is_treatment",
+        "cmnID", "dateID", "date", "is_accepted_answer", "is_treatment",
         "anchor_source", "anchor_resp_id", "anchor_cmnID", "anchor_dateID",
         "question_text", "earlier_answer_text", "later_answer_text",
         "question_text_for_llm", "earlier_answer_text_for_llm", "later_answer_text_for_llm",

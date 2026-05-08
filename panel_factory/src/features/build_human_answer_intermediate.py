@@ -9,7 +9,6 @@
 
 import os
 
-import numpy as np
 import pandas as pd
 
 from utils.paths import ARTIFACT_PATHS
@@ -17,16 +16,6 @@ from utils.paths import ARTIFACT_PATHS
 
 OUTPUT_CSV = ARTIFACT_PATHS["intermediate"]["human_answer"]
 os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
-
-
-def _coalesce_like_columns(df: pd.DataFrame) -> pd.Series:
-    candidates = [col for col in ["netlikeNum", "metlikes"] if col in df.columns]
-    if not candidates:
-        return pd.Series(np.nan, index=df.index)
-    result = df[candidates[0]].copy()
-    for col in candidates[1:]:
-        result = result.fillna(df[col])
-    return result
 
 
 def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
@@ -53,10 +42,12 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
     ).reset_index(drop=True)
 
     answer_base["resp_id"] = answer_base.groupby("questionURL").cumcount() + 1
-    answer_base["metlikes"] = _coalesce_like_columns(answer_base)
     answer_base["is_accepted_answer"] = answer_base["accept"].fillna(0).astype(int)
     answer_base["human_answer_text"] = answer_base["content_full_text"]
     answer_base["dateID"] = answer_base["resp_id"]
+
+    # Drop raw fields that have been standardized
+    answer_base = answer_base.drop(columns=["accept"], errors="ignore")
 
     ordered_cols = [
         "questionURL",
@@ -64,9 +55,8 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
         "cmnID",
         "dateID",
         "date",
-        "accept",
-        "metlikes",
         "is_accepted_answer",
+        "netlikeNum",
         "human_answer_text",
         "content_code_text",
         "content_CN_text",
