@@ -48,6 +48,7 @@ def compute_similarity(text_a, text_b, model) -> float:
 def build_question_level_similarity(
     group: pd.DataFrame,
     ai_lookup: pd.Series,
+    preai_lookup: pd.Series,
     model,
 ) -> pd.Series:
     question_url = group.name
@@ -57,17 +58,18 @@ def build_question_level_similarity(
     second_human_text = human_answers.iloc[1]["content_full_text"] if len(human_answers) >= 2 else np.nan
 
     ai_text = ai_lookup.get(question_url)
-    is_treatment = pd.notna(ai_text) and str(ai_text).strip() != ""
+    preai = int(preai_lookup.get(question_url, 0))
 
     result = {
         "questionURL": question_url,
-        "group_type": "treatment" if is_treatment else "control",
+        "preAI": preai,
+        "group_type": "treatment" if preai == 1 else "control",
         "n_human_answers": len(human_answers),
         "human1_human2_similarity": compute_similarity(first_human_text, second_human_text, model),
         "ai_human1_similarity": np.nan,
         "ai_human2_similarity": np.nan,
     }
-    if is_treatment:
+    if preai == 1:
         result["ai_human1_similarity"] = compute_similarity(ai_text, first_human_text, model)
         result["ai_human2_similarity"] = compute_similarity(ai_text, second_human_text, model)
 
@@ -88,12 +90,14 @@ def build() -> pd.DataFrame:
         .set_index("questionURL")["answer_text"]
     )
 
+    preai_lookup = question[["questionURL", "preAI"]].drop_duplicates("questionURL").set_index("questionURL")["preAI"]
+
     model = _load_model()
     tqdm.pandas(desc="Computing question-level similarity")
 
     feature = (
         human_answer.groupby("questionURL")
-        .progress_apply(lambda g: build_question_level_similarity(g, ai_lookup, model))
+        .progress_apply(lambda g: build_question_level_similarity(g, ai_lookup, preai_lookup, model))
         .reset_index(drop=True)
     )
     feature = question[["questionURL"]].merge(

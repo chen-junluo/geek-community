@@ -40,6 +40,7 @@ def build() -> pd.DataFrame:
     feat_code_similarity = pd.read_csv(ARTIFACT_PATHS["features"]["question_ai_human_code_similarity"])
     code_sim_cols = [
         "questionURL",
+        "preAI",
         "human1_human2_code_similarity",
         "ai_human1_code_similarity",
         "ai_human2_code_similarity",

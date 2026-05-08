@@ -42,17 +42,20 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
     question_ai_content = pd.read_csv(os.path.join(raw_dir, "question_ai_content.csv"))
     cmn_content = pd.read_csv(os.path.join(raw_dir, "cmn_content.csv"))
 
-    ai_rows = question[["questionURL"]].merge(
+    question_preai = question[["questionURL", "preAI"]].drop_duplicates("questionURL").copy()
+    question_preai["preAI"] = question_preai["preAI"].fillna(0).astype(int)
+
+    ai_rows = question_preai.merge(
         question_ai_content,
         on="questionURL",
         how="left",
     )
     ai_rows["ai_answer_text"] = _extract_ai_text(ai_rows)
     ai_rows["ai_answer_code_text"] = _extract_ai_code_text(ai_rows)
-    ai_rows = ai_rows[ai_rows["ai_answer_text"].notna()].copy()
-    ai_rows["ai_answer_text"] = ai_rows["ai_answer_text"].astype(str).str.strip()
-    ai_rows = ai_rows[ai_rows["ai_answer_text"] != ""].copy()
-    ai_rows["answer_id"] = 1
+    ai_rows["ai_answer_text"] = ai_rows["ai_answer_text"].astype("string").str.strip()
+    ai_rows = ai_rows[ai_rows["preAI"] == 1].copy()
+    ai_rows = ai_rows[ai_rows["ai_answer_text"].notna() & ai_rows["ai_answer_text"].ne("")].copy()
+    ai_rows["has_ai_answer"] = ai_rows["preAI"]
     ai_rows["answer_source"] = "AI_answer"
     ai_rows["resp_id"] = np.nan
     ai_rows["human_answer_text"] = np.nan
@@ -71,11 +74,8 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
         how="left",
     )
     human_rows = human_rows.rename(columns={"content_full_text": "human_answer_text"})
-
-    has_ai_map = ai_rows[["questionURL"]].drop_duplicates().assign(has_ai_answer=1)
-    human_rows = human_rows.merge(has_ai_map, on="questionURL", how="left")
-    human_rows["has_ai_answer"] = human_rows["has_ai_answer"].fillna(0).astype(int)
-    human_rows["answer_id"] = human_rows["resp_id"] + human_rows["has_ai_answer"]
+    human_rows["preAI"] = human_rows["preAI"].fillna(0).astype(int)
+    human_rows["has_ai_answer"] = human_rows["preAI"]
     human_rows["answer_source"] = "human_answer"
     human_rows["ai_answer_text"] = np.nan
     human_rows["ai_answer_code_text"] = np.nan
@@ -83,6 +83,8 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
 
     keep_cols = [
         "questionURL",
+        "preAI",
+        "has_ai_answer",
         "answer_id",
         "answer_source",
         "resp_id",
@@ -101,10 +103,16 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
     human_rows = human_rows[[col for col in keep_cols if col in human_rows.columns]].copy()
 
     full_answer = pd.concat([ai_rows, human_rows], ignore_index=True, sort=False)
+
+    # Sort by questionURL + dateID (AI answer has dateID=0, so it comes first)
     full_answer = full_answer.sort_values(
-        ["questionURL", "answer_id", "dateID", "cmnID"],
+        ["questionURL", "dateID", "cmnID"],
         na_position="last",
     ).reset_index(drop=True)
+
+    # Generate within-question local answer_id (1, 2, 3... per questionURL)
+    # AI answer will get answer_id=1, human answers will get 2, 3, 4...
+    full_answer["answer_id"] = full_answer.groupby("questionURL").cumcount() + 1
 
     full_answer.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")
     print(f"full_answer_intermediate 已保存: {OUTPUT_CSV}  shape={full_answer.shape}")

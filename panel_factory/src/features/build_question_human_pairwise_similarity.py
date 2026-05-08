@@ -50,7 +50,7 @@ def _pairwise_mean_similarity(texts: list[str], model) -> float:
 
 def build_question_pairwise(
     group: pd.DataFrame,
-    ai_lookup: pd.Series,
+    preai_lookup: pd.Series,
     model,
 ) -> pd.Series:
     question_url = group.name
@@ -60,10 +60,9 @@ def build_question_pairwise(
     human_texts = human_answers["content_full_text"].astype(str).str.strip().tolist()
     human_texts = [t for t in human_texts if t]
 
-    ai_text = ai_lookup.get(question_url)
-    is_treat = pd.notna(ai_text) and str(ai_text).strip() != ""
+    preai = int(preai_lookup.get(question_url, 0))
 
-    if is_treat:
+    if preai == 1:
         candidate_texts = human_texts
     else:
         candidate_texts = human_texts[1:] if len(human_texts) >= 1 else []
@@ -72,7 +71,8 @@ def build_question_pairwise(
 
     return pd.Series({
         "questionURL": question_url,
-        "group_type": "treatment" if is_treat else "control",
+        "preAI": preai,
+        "group_type": "treatment" if preai == 1 else "control",
         "n_human_answers": len(human_texts),
         "n_human_answers_used": len(candidate_texts),
         "human_pairwise_similarity_mean": sim,
@@ -84,21 +84,15 @@ def build_question_pairwise(
 def build() -> pd.DataFrame:
     question = pd.read_csv(ARTIFACT_PATHS["intermediate"]["question_misq"])
     human_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["human_answer_misq"])
-    full_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["full_answer_misq"])
 
-    ai_lookup = (
-        full_answer[full_answer["answer_source"] == "AI_answer"]
-        [["questionURL", "answer_text"]]
-        .drop_duplicates("questionURL")
-        .set_index("questionURL")["answer_text"]
-    )
+    preai_lookup = question[["questionURL", "preAI"]].drop_duplicates("questionURL").set_index("questionURL")["preAI"]
 
     model = _load_model()
     tqdm.pandas(desc="Computing pairwise similarity")
 
     feature = (
         human_answer.groupby("questionURL")
-        .progress_apply(lambda g: build_question_pairwise(g, ai_lookup, model))
+        .progress_apply(lambda g: build_question_pairwise(g, preai_lookup, model))
         .reset_index(drop=True)
     )
     feature = question[["questionURL"]].merge(

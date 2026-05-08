@@ -48,7 +48,7 @@ def build() -> pd.DataFrame:
     llm_extension_cols = [
         "questionURL",
         "resp_id",
-        "is_treatment",
+        "preAI",
         "anchor_source",
         "anchor_resp_id",
         "anchor_cmnID",
@@ -75,6 +75,7 @@ def build() -> pd.DataFrame:
     llm_deviation_cols = [
         "questionURL",
         "resp_id",
+        "preAI",
         "deviation_score",
         "justification",
         "relationship_label",
@@ -109,6 +110,8 @@ def build() -> pd.DataFrame:
     panel = _late_merge_prefer_feature(panel, feat_llm_extension, ["questionURL", "resp_id"])
     panel = _late_merge_prefer_feature(panel, feat_llm_deviation, ["questionURL", "resp_id"])
     panel = _late_merge_prefer_feature(panel, feat_lexicon, ["questionURL", "resp_id"])
+    if "preAI" in panel.columns:
+        panel["preAI"] = panel["preAI"].fillna(0).astype(int)
 
     out_path = ARTIFACT_PATHS["panels"]["answer_misq"]
     os.makedirs(os.path.dirname(out_path), exist_ok=True)

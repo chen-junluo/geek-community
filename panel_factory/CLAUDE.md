@@ -44,6 +44,12 @@ Working rules:
 ## User-Specific Rules
 
 ---
+## treatment contract
+
+- `preAI` 是整个 `panel_factory` pipeline 的 canonical treatment variable。
+- 语义：`preAI == 1` 表示该 `questionURL` 属于 treatment，即 human answers 之前存在 AI answer；`preAI == 0` 表示 control。
+
+---
 ## data grain 层次与 index contract
 
 ### 三个核心 grain 层次

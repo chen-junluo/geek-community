@@ -94,11 +94,17 @@ def _build_overlap_triplet(h1_text, h2_text, ai_text, is_treatment: bool):
 
 # ── Per-question builder ────────────────────────────────────────────────────
 
-def build_question_level_overlap(group: pd.DataFrame, ai_full_lookup: pd.Series, ai_code_lookup: pd.Series) -> pd.Series:
+def build_question_level_overlap(
+    group: pd.DataFrame,
+    ai_full_lookup: pd.Series,
+    ai_code_lookup: pd.Series,
+    preai_lookup: pd.Series,
+) -> pd.Series:
     question_url = group.name
 
     ai_full = ai_full_lookup.get(question_url)
     ai_code = ai_code_lookup.get(question_url)
+    preai = int(preai_lookup.get(question_url, 0))
 
     h1_full, h2_full, ai_full, n_human_answers = _extract_pair_texts(
         group,
@@ -111,19 +117,18 @@ def build_question_level_overlap(group: pd.DataFrame, ai_full_lookup: pd.Series,
         human_col="content_code_text",
     )
 
-    is_treatment = pd.notna(ai_full) and str(ai_full).strip() != ""
-
     jaccard_h1_h2, jaccard_ai_h2, jaccard_ans1_ans2 = _build_overlap_triplet(
-        h1_full, h2_full, ai_full, is_treatment
+        h1_full, h2_full, ai_full, preai == 1
     )
     jaccard_h1_h2_code, jaccard_ai_h2_code, jaccard_ans1_ans2_code = _build_overlap_triplet(
-        h1_code, h2_code, ai_code, is_treatment
+        h1_code, h2_code, ai_code, preai == 1
     )
 
     return pd.Series(
         {
             "questionURL": question_url,
-            "group_type": "treatment" if is_treatment else "control",
+            "preAI": preai,
+            "group_type": "treatment" if preai == 1 else "control",
             "n_human_answers": n_human_answers,
             "jaccard_h1_h2": jaccard_h1_h2,
             "jaccard_ai_h2": jaccard_ai_h2,
@@ -155,11 +160,13 @@ def build() -> pd.DataFrame:
         .set_index("questionURL")["content_code_text"]
     )
 
+    preai_lookup = question[["questionURL", "preAI"]].drop_duplicates("questionURL").set_index("questionURL")["preAI"]
+
     tqdm.pandas(desc="Computing question-level Jaccard overlap")
 
     feature = (
         human_answer.groupby("questionURL")
-        .progress_apply(lambda g: build_question_level_overlap(g, ai_full_lookup, ai_code_lookup))
+        .progress_apply(lambda g: build_question_level_overlap(g, ai_full_lookup, ai_code_lookup, preai_lookup))
         .reset_index(drop=True)
     )
     feature = question[["questionURL"]].merge(

@@ -48,6 +48,7 @@ def build() -> pd.DataFrame:
     feat_ai_human_similarity = pd.read_csv(ARTIFACT_PATHS["features"]["question_ai_human_similarity"])
     ai_human_cols = [
         "questionURL",
+        "preAI",
         "group_type",
         "n_human_answers",
         "human1_human2_similarity",
@@ -94,6 +95,10 @@ def build() -> pd.DataFrame:
     panel = _late_merge_prefer_feature(panel, feat_ai_human_code_similarity, ["questionURL"])
     panel = _late_merge_prefer_feature(panel, feat_jaccard, ["questionURL"])
     panel = _late_merge_prefer_feature(panel, feat_pairwise, ["questionURL"])
+    if "preAI" in panel.columns:
+        panel["preAI"] = panel["preAI"].fillna(0).astype(int)
+    if "group_type" in panel.columns:
+        panel["group_type"] = panel["group_type"].fillna("control")
 
     out_path = ARTIFACT_PATHS["panels"]["question_misq"]
     os.makedirs(os.path.dirname(out_path), exist_ok=True)

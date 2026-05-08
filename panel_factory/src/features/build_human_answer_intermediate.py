@@ -27,7 +27,7 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
 
     answer_base = cmn_base[cmn_base["cmnID"] != 0].copy()
     answer_base = answer_base.merge(
-        question[["questionURL"]],
+        question[["questionURL", "preAI"]],
         on="questionURL",
         how="inner",
     )
@@ -36,11 +36,16 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
         on=["questionURL", "cmnID"],
         how="left",
     )
+    # Ensure no old resp_id column exists
+    if "resp_id" in answer_base.columns:
+        answer_base = answer_base.drop(columns=["resp_id"])
+
     answer_base = answer_base.sort_values(
         ["questionURL", "date", "cmnID"],
         na_position="last",
     ).reset_index(drop=True)
 
+    # Generate within-question local index (1, 2, 3... per questionURL)
     answer_base["resp_id"] = answer_base.groupby("questionURL").cumcount() + 1
     answer_base["is_accepted_answer"] = answer_base["accept"].fillna(0).astype(int)
     answer_base["human_answer_text"] = answer_base["content_full_text"]
@@ -54,6 +59,7 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
         "resp_id",
         "cmnID",
         "dateID",
+        "preAI",
         "date",
         "is_accepted_answer",
         "netlikeNum",

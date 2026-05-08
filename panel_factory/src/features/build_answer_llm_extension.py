@@ -226,7 +226,7 @@ def prepare_eval_panel(
     human_answer: pd.DataFrame,
     full_answer: pd.DataFrame,
 ) -> pd.DataFrame:
-    question_rows = question[["questionURL", "question_text"]].drop_duplicates("questionURL")
+    question_rows = question[["questionURL", "question_text", "preAI"]].drop_duplicates("questionURL")
     ai_rows = (
         full_answer[full_answer["answer_source"] == "AI_answer"]
         [["questionURL", "answer_text"]]
@@ -250,24 +250,26 @@ def prepare_eval_panel(
 
     panel = (
         human_answer[human_answer["human_answer_text"].notna()].copy()
-        .merge(question_rows, on="questionURL", how="left")
+        .merge(question_rows, on="questionURL", how="left", suffixes=("", "_question"))
         .merge(ai_rows, on="questionURL", how="left")
         .merge(first_human, on="questionURL", how="left")
     )
-    panel["is_treatment"] = panel["ai_answer_text"].notna().astype(int)
-    panel["anchor_source"] = np.where(panel["is_treatment"] == 1, "AI_answer", "first_human_answer")
-    panel["anchor_resp_id"] = np.where(panel["is_treatment"] == 1, np.nan, panel["first_human_resp_id"])
-    panel["anchor_cmnID"] = np.where(panel["is_treatment"] == 1, np.nan, panel["first_human_cmnID"])
-    panel["anchor_dateID"] = np.where(panel["is_treatment"] == 1, np.nan, panel["first_human_dateID"])
+    if "preAI_question" in panel.columns:
+        panel["preAI"] = panel["preAI_question"]
+    panel["preAI"] = panel["preAI"].fillna(0).astype(int)
+    panel["anchor_source"] = np.where(panel["preAI"] == 1, "AI_answer", "first_human_answer")
+    panel["anchor_resp_id"] = np.where(panel["preAI"] == 1, np.nan, panel["first_human_resp_id"])
+    panel["anchor_cmnID"] = np.where(panel["preAI"] == 1, np.nan, panel["first_human_cmnID"])
+    panel["anchor_dateID"] = np.where(panel["preAI"] == 1, np.nan, panel["first_human_dateID"])
     panel["earlier_answer_text"] = np.where(
-        panel["is_treatment"] == 1,
+        panel["preAI"] == 1,
         panel["ai_answer_text"],
         panel["first_human_text"],
     )
     panel = panel.rename(columns={"human_answer_text": "later_answer_text"})
 
-    t_mask = panel["is_treatment"] == 1
-    c_mask = panel["is_treatment"] == 0
+    t_mask = panel["preAI"] == 1
+    c_mask = panel["preAI"] == 0
     panel = panel[(t_mask & panel["later_answer_text"].notna()) | (c_mask & panel["later_answer_text"].notna())].copy()
     panel = panel[(t_mask & panel["dateID"].notna()) | (c_mask & (panel["dateID"] > panel["first_human_dateID"]))].copy()
 
@@ -279,7 +281,7 @@ def prepare_eval_panel(
 
     return panel[[
         "questionURL", "resp_id", "comparison_target",
-        "cmnID", "dateID", "date", "is_accepted_answer", "is_treatment",
+        "cmnID", "dateID", "date", "is_accepted_answer", "preAI",
         "anchor_source", "anchor_resp_id", "anchor_cmnID", "anchor_dateID",
         "question_text", "earlier_answer_text", "later_answer_text",
         "question_text_for_llm", "earlier_answer_text_for_llm", "later_answer_text_for_llm",
@@ -369,7 +371,7 @@ def build() -> pd.DataFrame:
     result_df = pd.DataFrame(eval_results)
     output = eval_panel.merge(result_df, on="cache_key", how="left")
 
-    feature_cols = ["questionURL", "resp_id", "cmnID", "dateID", "is_treatment", "anchor_source",
+    feature_cols = ["questionURL", "resp_id", "cmnID", "dateID", "preAI", "anchor_source",
                     "anchor_resp_id", "anchor_cmnID", "anchor_dateID", "comparison_target",
                     "extension_score", "justification", "relationship_label",
                     "prompt_version", "model_name", "error_reason"]

@@ -38,7 +38,7 @@ def build() -> pd.DataFrame:
     # ── 2. 读取 late-merge feature ─────────────────────────────────────────────
     feat_deviation = pd.read_csv(ARTIFACT_PATHS["features"]["answer_llm_deviation"])
 
-    dev_cols = ["questionURL", "resp_id", "deviation_score",
+    dev_cols = ["questionURL", "resp_id", "preAI", "deviation_score",
                 "justification", "relationship_label",
                 "prompt_version", "model_name", "error_reason"]
     dev_cols = [c for c in dev_cols if c in feat_deviation.columns]
@@ -52,6 +52,8 @@ def build() -> pd.DataFrame:
     })
 
     panel = _late_merge_prefer_feature(intermediate, feat_deviation, ["questionURL", "resp_id"])
+    if "preAI" in panel.columns:
+        panel["preAI"] = panel["preAI"].fillna(0).astype(int)
 
     accept_path = ARTIFACT_PATHS["features"]["answer_accepted_answer_similarity"]
     if os.path.exists(accept_path):
