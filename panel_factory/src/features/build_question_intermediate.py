@@ -10,7 +10,6 @@
 # 补充列（相比旧版）：
 #   - views, focusNum, collectNum (从 cmn_base)
 #   - preAI (从 question_ai_content 推断)
-#   - question_id (chronological order)
 
 import os
 
@@ -38,9 +37,6 @@ def _load_raw_tables(raw_dir: str):
         .sort_values(["date", "questionURL"], na_position="last")
         .reset_index(drop=True)
     )
-
-    # Add question_id (chronological order)
-    question_base["question_id"] = range(1, len(question_base) + 1)
 
     # Extract question text
     question_text = (
@@ -82,7 +78,7 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
 
     # Select and order columns
     # Core columns
-    core_cols = ["question_id", "questionURL", "title", "question_text", "date", "preAI"]
+    core_cols = ["questionURL", "title", "question_text", "date", "preAI"]
 
     # Metadata columns
     metadata_cols = ["views", "focusNum", "collectNum", "ask"]
@@ -109,7 +105,6 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
 
     question.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")
     print(f"question_intermediate 已保存: {OUTPUT_CSV}  shape={question.shape}")
-    print(f"  - question_id range: {question['question_id'].min()} to {question['question_id'].max()}")
     print(f"  - date range: {question['date'].min()} to {question['date'].max()}")
     print(f"  - preAI questions: {question['preAI'].sum()} ({question['preAI'].mean()*100:.1f}%)")
     return question
