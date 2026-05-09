@@ -60,15 +60,14 @@
 - 如果任务涉及任何数字化转型、reconstruction、legacy workflow 拆解、迁移前逻辑梳理，除查看 `archive/` 外，还要优先遵守 `Archive/CLAUDE.md`
 
 ---
-
 ## 4. 局部说明优先
 
-如果某个子文件夹下还有自己的 `CLAUDE.md`，则该局部文件夹内的说明优先级更高。
-例如在 `panel_factory/` 内工作时，应同时遵守 `panel_factory/CLAUDE.md` 的要求。
-- 协作风格
-  - 中文简洁描述内容，technical terms 用 English。
-  - 当结构不清晰时，先列 inventory，再提 reconstruction plan。
-  - 优先尊重已有 artifact names、merge keys、output boundaries，再逐步优化。
+- 如果某个子文件夹下还有自己的 `CLAUDE.md`，则该局部文件夹内的说明优先级更高
+- 例如在 `panel_factory/` 内工作时，应同时遵守 `panel_factory/CLAUDE.md` 的要求
+- 协作风格：
+  - 中文简洁描述内容，technical terms 用 English
+  - 当结构不清晰时，先列 inventory，再提 reconstruction plan
+  - 优先尊重已有 artifact names、merge keys、output boundaries，再逐步优化
 
 ---
 ## 5. 同步 upstream CLAUDE.md 更新
@@ -93,6 +92,24 @@
   git commit -m "Sync CLAUDE.md from upstream"
   ```
 - 当用户要求同步 CLAUDE.md 或更新 upstream 规则时，直接运行这个 script
+
+---
+## 6. CLAUDE.md 修改规则
+
+- 用户对任何 `CLAUDE.md` 的修改，必须全部放在 `## User-Specific Rules` marker 之后
+  - marker 之前的内容是 upstream template 规则，会在同步时被覆盖
+  - marker 之后的内容是用户自定义规则，同步时会被保留
+  - 这样确保 upstream 更新不会丢失用户的项目特定配置
+- 撰写或修改 `CLAUDE.md` 时，遵守以下格式规则（参考用户全局 `~/.claude/CLAUDE.md`）：
+  - 使用缩进组织的、嵌套的、多级的 nested bullet points，不写松散长段落
+  - 标题克制，最多使用 `##` 二级标题；能不用标题时，直接用有序主项
+  - 每个主 section 前使用分隔符 `---`，主项保持数字序号，如 `## 1. ...`
+  - 换行克制，不频繁空行；只在 section 切换时少量留白
+  - 代码相关内容（`file paths`、`folder names`、`variable names`、`function names`、`field names`、`commands`、`config keys`）一律使用行内代码
+  - 使用中英夹杂语言：中文精炼描述内容，English 描述 technical terms 或 project-specific 定义
+  - 先给结构，再给解释；优先用 bullet hierarchy 表达 `scope`、`priority`、`rules`、`exceptions`
+  - 标题数量控制在 5 个以内，精炼表达核心要点
+  - 目标：让内容看起来像 reusable rule file，不像松散说明文
 
 ---
 ---
