@@ -12,7 +12,7 @@
 # 1. 如果有 accepted answer：
 #    - 只有 1 个 → 选这个（rule = "single_accept"）
 #    - 有多个 → 选 `netlikeNum` 最高的
-#      - 唯一最高 → 选这个（rule = "max_metlikes_among_accepted"）
+#      - 唯一最高 → 选这个（rule = "max_netlikes_among_accepted"）
 #      - 多个并列最高 → 按 `resp_id` 排序后拼接（rule = "concat_tied_accepted"）
 # 2. 如果没有 accepted answer：
 #    - 选 `netlikeNum` 最高的 human answer

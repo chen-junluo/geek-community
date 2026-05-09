@@ -8,7 +8,6 @@
 #       `resp_id` 只给 human answers，且必须按 chronological order 构造。
 #
 # 补充列（相比旧版）：
-#   - metlikes (coalesce netlikeNum)
 #   - accumRep, accumGold, accumSilver, accumCopper (user badges)
 #   - content_code_text, content_CN_text (text extracts)
 #   - 确保 resp_id 按 (date, cmnID) chronological order
@@ -65,7 +64,6 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
 
     # Standardize column names
     answer_base["is_accepted_answer"] = answer_base["accept"].fillna(0).astype(int)
-    answer_base["metlikes"] = answer_base["netlikeNum"].fillna(0)  # coalesce netlikeNum
     answer_base["human_answer_text"] = answer_base["content_full_text"]
     answer_base["dateID"] = answer_base["resp_id"]  # dateID = resp_id for compatibility
 
@@ -77,7 +75,7 @@ def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
     core_cols = ["questionURL", "resp_id", "cmnID", "dateID", "date"]
 
     # Answer metadata
-    answer_cols = ["is_accepted_answer", "metlikes", "answer", "hiddenanswer"]
+    answer_cols = ["is_accepted_answer", "answer", "hiddenanswer"]
 
     # Text content
     text_cols = ["human_answer_text", "content_code_text", "content_CN_text"]
