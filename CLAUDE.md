@@ -98,4 +98,8 @@
 ---
 ## User-Specific Rules
 
-<!-- 在此添加你的项目特定规则 -->
+### Regression Reports
+- 当用户要求输出回归表格时，使用 Regression Reports workflow
+- 执行前必须读取 `Documents/Notes/regression_conventions.md` 和 `Documents/Notes/variable_mapping.md`
+- 基于变量映射表进行文本替换，确保 Word 输出的表格使用可读的变量名
+- Notes 格式：紧凑的 bullet points，包含 Sample、DV、IV 定义，不包含 controls/FE 细节

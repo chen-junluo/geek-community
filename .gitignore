@@ -15,3 +15,6 @@ panel_factory/data/**
 panel_factory/data/raw/*
 !panel_factory/data/raw/tagName_classified_GBK.csv
 output.doc
+
+# Office temporary files
+~$*
