@@ -115,6 +115,8 @@
 ---
 ## User-Specific Rules
 
+<!-- 在此添加你的 Projects 层特定规则 -->
+
 ### Regression Reports
 - 当用户要求输出回归表格时，使用 Regression Reports workflow
 - 执行前必须读取 `Documents/Notes/regression_conventions.md` 和 `Documents/Notes/variable_mapping.md`

@@ -51,7 +51,20 @@
 ---
 ## User-Specific Rules
 
-<!-- 在此添加你的 panel_factory 特定规则 -->
+<!-- 在此添加你的 Projects 层特定规则 -->
+
+---
+## pipeline consistency enforcement
+
+- 强制同步规则：当新建/修任何`build_*.py` 文件的时候，必须同步更新三处：
+  1. **修改 `build_*.py` 文件的 structured header**
+  2. **更新 `documents/pipeline_dependency_table.md` 的 graph 和 table**
+- Structured Header 强制要求
+
+- 所有 `build_*.py` 文件必须包含 structured header
+- Header 格式必须严格遵守 `documents/build_file_header_template.md` 规范
+- 修改代码逻辑时，必须同步更新 header
+- Header 中的信息必须与实际代码逻辑一致
 
 ---
 ## treatment contract
@@ -60,63 +73,33 @@
 - 语义：`preAI == 1` 表示该 `questionURL` 属于 treatment，即 human answers 之前存在 AI answer；`preAI == 0` 表示 control。
 
 ---
-## data grain 层次与 index contract
+## data grain 层次与 merge index contract
 
-### 三个核心 grain 层次
+- 四个核心 grain 层次
+  - **Question grain**: intermediate `question_intermediate.csv`，merge key `questionURL`，用于 question metadata / text / aggregations
+  - **Human Answer grain**: intermediate `human_answer_intermediate.csv`，merge key `questionURL × resp_id`，用于 human-authored answers（不包含 AI answers）
+  - **Full Answer grain**: intermediate `full_answer_intermediate.csv`，merge key `questionURL × answer_id`，用于 AI answer + human answers 的完整 answer universe
+  - **User Activity grain**: intermediate `all_activities_intermediate.csv`，merge key `userURL × date × activity_type`，用于 user-level activities（post question / answer / receive likes 等）
+- Feature 层命名规范
+  - 所有 feature 文件名必须以 grain 开头：`{grain}_{feature_name}.csv`
+  - 列名也包含 grain prefix（除了 merge keys）
+  - 例如：`question_content_metrics.csv` 中的列为 `question_textLength`、`question_imgNum`
+- Intermediate 数量控制
+  - 严格限制为 4 个 intermediates，不再新增
+  - 所有衍生变量归入 `features/`
+  - Panel 层通过 late merge 组装
+  - 目的：做解耦，一个 intermediate 可被多个 features 复用，一个 feature table 可被多个 panels / projects 复用，避免”每一步都 carry full table”的大表链式加工，减少 project-specific logic 混入 shared pipeline
 
-1. **Question Level**
-   - Grain: `questionURL`
-   - 定义：每个 question post 作为一个观测单位
-   - Intermediate: `question_intermediate.csv`
-   - 用途：question metadata、question text、question-level features
-   - 禁止使用 `question_id`，唯一标识就是 `questionURL`
-
-2. **Human Answer Level (Response Level)**
-   - Grain: `questionURL × resp_id`
-   - 定义：每个 human-authored answer 作为一个观测单位
-   - Intermediate: `human_answer_intermediate.csv`
-   - Index 构造：按 `questionURL + date + cmnID` chronological order 生成 `resp_id`
-   - 特点：
-     - 只包含 human answers，不包含 AI answers
-     - `resp_id` 从 1 开始递增，表示该 question 下第几个 human answer
-     - `cmnID != 0`（`cmnID == 0` 是 question 本身，不算 answer）
-     - `cmnID` 不是 chronological order，不能直接用于 sequencing
-
-3. **All Answer Level (Full Answer Level)**
-   - Grain: `questionURL × answer_id`
-   - 定义：包含 AI answer + human answers 的完整 answer universe
-   - Intermediate: `full_answer_intermediate.csv`
-   - Index 构造：
-     - AI answer: `answer_id = 1`，`resp_id = NaN`，`answer_source = "AI_answer"`
-     - Human answers: `answer_id = resp_id + has_ai_answer`，`answer_source = "human_answer"`
-   - 特点：
-     - 统一 `answer_text` 字段（AI 用 `ai_answer_text`，human 用 `human_answer_text`）
-     - 必须强区分 AI answer 与 human answer，不要混用 `answer_id` 与 `resp_id`
-     - 如果某个 question 有 AI answer，human answers 的 `answer_id` 会整体 +1
-
-### Index 使用规则
-
-- Question-level features: merge key 是 `questionURL`
-- Human-answer-level features: merge key 是 `questionURL × resp_id`
-- All-answer-level features: merge key 是 `questionURL × answer_id`
-- 新 index 默认按 `dateID` / chronological order 构造
-- `cmnID` 不是 chronological order，不能拿来做 sequencing
+---
+## MISQ rule
 - MISQ sample rule
-  - 严格沿用 `Archive/round2_parser_for_panel.ipynb` 的 sample definition。
-  - 先在 question rows 上筛：`ask == 1` 且 `date >= 2023-01-01`。
-  - 再按 `questionURL` 保留这些 questions 对应的 whole thread。
-  - MISQ-specific intermediates / features / panels 必须只在这个 universe 内计算与 merge。
-  - 默认不要直接覆盖通用 panel builder，优先新增 `*_MISQ` builders 明确语义。
-  
-- **default version rule**
-  - 当前默认使用带 `_MISQ` 后缀的 intermediates 和 panels。
-  - 所有新 feature、新 panel、新 project 默认基于 MISQ 版本构建。
-  - 不带 `_MISQ` 后缀的旧版本文件保留在原位置，但不再作为 active reference。
-  - 除非用户明确说明要做非 MISQ 项目，否则一律使用 MISQ 版本。
-  - 目的：减少版本混淆，避免重复工作，统一 pipeline 入口。
-  - 为什么要这样做
-    - 做解耦。base table、feature engineering、panel assembly 是不同层。
-    - 一个 `intermediate` 可以被多个 features 复用。
-    - 一个 feature table 也可以被多个 panels 或多个 projects 复用。
-    - 避免“每一步都 carry full table”的大表链式加工。
-    - 减少 project-specific logic 混入 shared pipeline。
+  - 严格沿用 `Archive/round2_parser_for_panel.ipynb` 的 sample definition
+  - 先在 question rows 上筛：`ask == 1` 且 `date >= 2023-01-01`
+  - 再按 `questionURL` 保留这些 questions 对应的 whole thread
+  - MISQ-specific intermediates / features / panels 必须只在这个 universe 内计算与 merge
+  - 默认不要直接覆盖通用 panel builder，优先新增 `*_MISQ` builders 明确语义
+- Default version rule
+  - 当前默认使用带 `_MISQ` 后缀的 intermediates 和 panels
+  - 所有新 feature、新 panel、新 project 默认基于 MISQ 版本构建
+  - 不带 `_MISQ` 后缀的旧版本文件保留在原位置，但不再作为 active reference
+  - 除非用户明确说明要做非 MISQ 项目，否则一律使用 MISQ 版本
