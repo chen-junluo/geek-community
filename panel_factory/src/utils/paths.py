@@ -24,20 +24,40 @@ ARTIFACT_PATHS = {
 
     # compact feature tables。
     "features": {
-        # answer-level LLM features
-        "answer_llm_extension": os.path.join(_BASE, "features", "answer_llm_extension.csv"),
-        "answer_llm_deviation": os.path.join(_BASE, "features", "answer_llm_deviation.csv"),
-        "answer_accepted_answer_similarity": os.path.join(_BASE, "features", "answer_accepted_answer_similarity.csv"),
-        "answer_accepted_answer_similarity_misq": os.path.join(_BASE, "features", "answer_accepted_answer_similarity_MISQ.csv"),
-        "answer_lexicon_based_answer_metrics": os.path.join(_BASE, "features", "answer_lexicon_based_answer_metrics.csv"),
+        # activity-level intermediate
+        "all_activities": os.path.join(_BASE, "features", "all_activities.csv"),
+        # question-level content metrics (NEW)
+        "question_content_metrics": os.path.join(_BASE, "features", "question_content_metrics.csv"),
+        # human answer-level content metrics (NEW)
+        "human_answer_content_metrics": os.path.join(_BASE, "features", "human_answer_content_metrics.csv"),
+        # question-level matching (NEW)
+        "question_matching": os.path.join(_BASE, "features", "question_matching.csv"),
+        # question-level AIGC quality (NEW)
+        "question_aigc_quality": os.path.join(_BASE, "features", "question_aigc_quality.csv"),
+        # user activity-level experience (NEW)
+        "user_activity_experience": os.path.join(_BASE, "features", "user_activity_experience.csv"),
+        # question-level aggregation from answers (NEW)
+        "question_aggregation_from_answers": os.path.join(_BASE, "features", "question_aggregation_from_answers.csv"),
+        # human answer-level AIGC quality (NEW)
+        "human_answer_aigc_quality": os.path.join(_BASE, "features", "human_answer_aigc_quality.csv"),
+        # human answer-level LLM features
+      "human_answer_llm_extension": os.path.join(_BASE, "features", "human_answer_llm_extension.csv"),
+        "human_answer_llm_deviation": os.path.join(_BASE, "features", "human_answer_llm_deviation.csv"),
+        "human_answer_accepted_answer_similarity_misq": os.path.join(_BASE, "features", "human_answer_accepted_answer_similarity_MISQ.csv"),
+        "human_answer_lexicon_based_answer_metrics": os.path.join(_BASE, "features", "human_answer_lexicon_based_answer_metrics.csv"),
         # question-level similarity features
         "question_ai_human_similarity": os.path.join(_BASE, "features", "question_ai_human_similarity.csv"),
         "question_ai_human_code_similarity": os.path.join(_BASE, "features", "question_ai_human_code_similarity.csv"),
         "question_content_jaccard_overlap": os.path.join(_BASE, "features", "question_content_jaccard_overlap.csv"),
-        "question_accepted_answer_similarity": os.path.join(_BASE, "features", "question_accepted_answer_similarity.csv"),
         "question_accepted_answer_similarity_misq": os.path.join(_BASE, "features", "question_accepted_answer_similarity_MISQ.csv"),
         # question-level human pairwise similarity（treatment: all humans; control: drop first human）
         "question_human_pairwise_similarity": os.path.join(_BASE, "features", "question_human_pairwise_similarity.csv"),
+
+    # Deprecated aliases (for backward compatibility)
+        "answer_llm_extension": os.path.join(_BASE, "features", "human_answer_llm_extension.csv"),
+        "answer_llm_deviation": os.path.join(_BASE, "features", "human_answer_llm_deviation.csv"),
+        "answer_accepted_answer_similarity_misq": os.path.join(_BASE, "features", "human_answer_accepted_answer_similarity_MISQ.csv"),
+        "answer_lexicon_based_answer_metrics": os.path.join(_BASE, "features", "human_answer_lexicon_based_answer_metrics.csv"),
     },
 
     # final panels
