@@ -1,15 +1,22 @@
-# Artifact:  feature/question_ai_human_similarity
-# 输入:      data/features/question_intermediate_MISQ.csv, data/features/human_answer_intermediate_MISQ.csv,
-#            data/features/full_answer_intermediate_MISQ.csv
-# Grain:     question-level (questionURL)
-# Merge keys: questionURL
-# 输出:      data/features/question_ai_human_similarity.csv
+# Artifact:    feature/question_ai_human_similarity
+# Grain:       question
+# Merge Keys:  questionURL
 #
-# 逻辑：在 MISQ universe 内，对每个 question，用 sentence-transformers 计算三个 cosine similarity：
+# Inputs:
+#   - question_intermediate_MISQ.csv
+#   - human_answer_intermediate_MISQ.csv
+#   - full_answer_intermediate_MISQ.csv
+#
+# Output:      data/features/question_ai_human_similarity.csv
+#   - Index: questionURL
+#   - Core: human1_human2_similarity, ai_human1_similarity, ai_human2_similarity
+#   - Derived: —
+#
+# Logic:
+#   - 在 MISQ universe 内，对每个 question，用 sentence-transformers 计算三个 cosine similarity
 #   - human1_human2_similarity：第一个与第二个 human answer 之间
 #   - ai_human1_similarity：AI answer 与第一个 human answer（仅有 AI answer 时非空）
 #   - ai_human2_similarity：AI answer 与第二个 human answer（仅有 AI answer 时非空）
-
 import os
 import numpy as np
 import pandas as pd

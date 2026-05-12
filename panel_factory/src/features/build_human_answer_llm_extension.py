@@ -1,13 +1,27 @@
-# Artifact:  feature/answer_llm_extension
-# 输入:      data/features/question_intermediate_MISQ.csv, data/features/human_answer_intermediate_MISQ.csv,
-#            data/features/full_answer_intermediate_MISQ.csv
-# Grain:     human-answer-level (questionURL × resp_id)
-# Merge keys: questionURL, resp_id
-# 输出:      data/features/answer_llm_extension.csv
+# Artifact:    feature/human_answer_llm_extension
+# Grain:       human_answer
+# Merge Keys:  questionURL, resp_id
 #
-# 逻辑：在 MISQ human-response universe 内，对每个 human answer pair（earlier answer vs later answer），
-#       用 DeepSeek 评估 later answer 在 earlier answer 基础上的 solution-path extension 程度（0-10）。
-#       Treatment: earlier = AI answer；Control: earlier = 第一个 human answer。
+# Inputs:
+#   - question_intermediate_MISQ.csv
+#   - human_answer_intermediate_MISQ.csv
+#   - full_answer_intermediate_MISQ.csv
+#
+# Output:      data/features/human_answer_llm_extension.csv
+#   - Index: questionURL, resp_id
+#   - Core: human_answer_llm_extension, prompt_version, api_call_timestamp
+#   - Derived: —
+#
+# Logic:
+#   - 在 MISQ human-response universe 内，对每个 human answer pair（earlier answer vs later answer）
+#   - 用 DeepSeek API 评估 later answer 在 earlier answer 基础上的 solution-path extension 程度（0-10）
+#   - Treatment: earlier = AI answer
+#   - Control: earlier = 第一个 human answer
+#   - Prompt version: v2_extension_score_0_10_rubric
+#   - 使用 cache 机制避免重复调用 API
+#   - 并发请求: MAX_WORKERS=20
+
+
 
 import os
 import re
@@ -37,7 +51,7 @@ MAX_WORKERS = 20
 PROMPT_VERSION = "v2_extension_score_0_10_rubric"
 
 CACHE_DIR = ARTIFACT_PATHS["cache"]["llm_extension"]
-OUTPUT_CSV = ARTIFACT_PATHS["features"]["answer_llm_extension"]
+OUTPUT_CSV = ARTIFACT_PATHS["features"]["human_answer_llm_extension"]
 
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)

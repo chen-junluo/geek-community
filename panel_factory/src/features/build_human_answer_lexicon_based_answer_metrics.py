@@ -1,11 +1,19 @@
-# Artifact:  feature/answer_lexicon_based_answer_metrics
-# 输入:      data/features/human_answer_intermediate_MISQ.csv, data/features/full_answer_intermediate_MISQ.csv
-# Grain:     human-answer-level (questionURL × resp_id)
-# Merge keys: questionURL, resp_id
-# 输出:      data/features/answer_lexicon_based_answer_metrics.csv
+# Artifact:    feature/human_answer_lexicon_based_answer_metrics
+# Grain:    human_answer
+# Merge Keys:  questionURL, resp_id
 #
-# 逻辑：在 MISQ human-response universe 内，用中文技术社区语境下的 rule-based lexicon
-#       识别回答中的 personal experience 表达，先产出可扩展的 lexicon-based answer metrics。
+# Inputs:
+#   - human_answer_intermediate_MISQ.csv
+#   - full_answer_intermediate_MISQ.csv
+#
+# Output:      data/features/human_answer_lexicon_based_answer_metrics.csv
+#   - Index: questionURL, resp_id
+#   - Core: (lexicon-based personal experience metrics)
+#   - Derived: —
+#
+# Logic:
+#   - 在 MISQ human-response universe 内，用中文技术社区语境下的 rule-based lexicon
+#   - 识别回答中的 personal experience 表达，先产出可扩展的 lexicon-based answer metrics
 
 import os
 import re
@@ -15,7 +23,7 @@ import pandas as pd
 from utils.paths import ARTIFACT_PATHS
 
 
-OUTPUT_CSV = ARTIFACT_PATHS["features"]["answer_lexicon_based_answer_metrics"]
+OUTPUT_CSV = ARTIFACT_PATHS["features"]["human_answer_lexicon_based_answer_metrics"]
 os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
 
 METHOD = "lexicon_rule_based"

@@ -1,11 +1,19 @@
-# Artifact:  feature/question_content_jaccard_overlap
-# 输入:      data/features/question_intermediate_MISQ.csv, data/features/human_answer_intermediate_MISQ.csv,
-#            data/features/full_answer_intermediate_MISQ.csv
-# Grain:     question-level (questionURL)
-# Merge keys: questionURL
-# 输出:      data/features/question_content_jaccard_overlap.csv
+# Artifact:    feature/question_content_jaccard_overlap
+# Grain:       question
+# Merge Keys:  questionURL
 #
-# 逻辑：在 MISQ universe 内，对每个 question，用 token-set Jaccard overlap 计算六个变量：
+# Inputs:
+#   - question_intermediate_MISQ.csv
+#   - human_answer_intermediate_MISQ.csv
+#   - full_answer_intermediate_MISQ.csv
+#
+# Output:      data/features/question_content_jaccard_overlap.csv
+#   - Index: questionURL
+#   - Core: jaccard_h1_h2, jaccard_ai_h2, jaccard_h1_h2_code, jaccard_ai_h2_code
+#   - Derived: jaccard_ans1_ans2, jaccard_ans1_ans2_code
+#
+# Logic:
+#   - 在 MISQ universe 内，对每个 question，用 token-set Jaccard overlap 计算六个变量
 #   - jaccard_h1_h2：第一个与第二个 human answer 的 `content_full_text` overlap
 #   - jaccard_ai_h2：AI answer 与第二个 human answer 的 `content_full_text` overlap（仅有 AI answer 时非空）
 #   - jaccard_ans1_ans2：有 AI answer 时用 AI vs human2，否则用 human1 vs human2
