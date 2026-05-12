@@ -1,14 +1,22 @@
-# Artifact:  intermediate/all_activities
-# 输入:      data/raw/cmn_base.csv, data/raw/votes_content.csv, data/raw/object_id.csv
-# Grain:     activity-level (userURL × date × activity_type)
-# Merge keys: userURL, date
-# 输出:      data/features/all_activities.csv
+# Artifact:    intermediate/all_activities_intermediate
+# Grain:       user_activity
+# Merge Keys:  userURL, date
 #
-# 逻辑：合并 asks, answers, comments 到统一 timeline
-#       计算 commentAsker, commentResponder, commentOthers
-#       添加 accepted_thisQue, comment_thisCmn 等字段
+# Inputs:
+#   - cmn_base.csv  # post activities
+#   - votes_content.csv  # like activities
+#   - object_id.csv  # object type mapping
 #
-# 从 Archive notebook cells 26-33 提取
+# Output:      data/features/all_activities.csv
+#   - Index: userURL, date, questionURL, cmnID
+#   - Core: ask, answer, comment, commentAsker, commentResponder, commentOthers, accepted_thisQue, comment_thisCmn, commentAsker_thisCmn, commentResponder_thisCmn, commentOthers_thisCmn, netlikeNum, accepted, accept
+#   - Derived: —
+#
+# Logic:
+#   - Merge asks, answers, comments into unified timeline
+#   - Calculate commentAsker, commentResponder, commentOthers for each comment
+#   - Add accepted_thisQue, comment_thisCmn aggregated fields
+#   - Sort by date and remove duplicates
 
 import os
 
@@ -70,10 +78,13 @@ def _build_votes_copy(cmn_base, votes_content, object_id):
 
     # Prepare cmn_base_object for lookup
     cmn_base["date"] = pd.to_datetime(cmn_base["date"])
-    cmn_base["object_id"] = cmn_base["object_id"].astype(str) if "object_id" in cmn_base.columns else None
 
-    if cmn_base["object_id"].isna().all():
-        # Merge object_id
+    # Check if object_id exists in cmn_base
+    if "object_id" not in cmn_base.columns:
+        # Merge object_id from object_id table
+        cmn_base_object = cmn_base.merge(object_id, on=["questionURL", "cmnID"], how="left")
+    elif cmn_base["object_id"].isna().all():
+        # Merge object_id from object_id table
         cmn_base_object = cmn_base.merge(object_id, on=["questionURL", "cmnID"], how="left")
     else:
         cmn_base_object = cmn_base.copy()
