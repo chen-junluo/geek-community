@@ -41,7 +41,7 @@ ARTIFACT_PATHS = {
         # human answer-level AIGC quality (NEW)
         "human_answer_aigc_quality": os.path.join(_BASE, "features", "human_answer_aigc_quality.csv"),
         # human answer-level LLM features
-      "human_answer_llm_extension": os.path.join(_BASE, "features", "human_answer_llm_extension.csv"),
+        "human_answer_llm_extension": os.path.join(_BASE, "features", "human_answer_llm_extension.csv"),
         "human_answer_llm_deviation": os.path.join(_BASE, "features", "human_answer_llm_deviation.csv"),
         "human_answer_accepted_answer_similarity_misq": os.path.join(_BASE, "features", "human_answer_accepted_answer_similarity_MISQ.csv"),
         "human_answer_lexicon_based_answer_metrics": os.path.join(_BASE, "features", "human_answer_lexicon_based_answer_metrics.csv"),
@@ -50,6 +50,7 @@ ARTIFACT_PATHS = {
         "question_ai_human_code_similarity": os.path.join(_BASE, "features", "question_ai_human_code_similarity.csv"),
         "question_content_jaccard_overlap": os.path.join(_BASE, "features", "question_content_jaccard_overlap.csv"),
         "question_accepted_answer_similarity_misq": os.path.join(_BASE, "features", "question_accepted_answer_similarity_MISQ.csv"),
+        "question_llm_ground_truth_similarity_misq": os.path.join(_BASE, "features", "question_llm_ground_truth_similarity_MISQ.csv"),
         # question-level human pairwise similarity（treatment: all humans; control: drop first human）
         "question_human_pairwise_similarity": os.path.join(_BASE, "features", "question_human_pairwise_similarity.csv"),
 
@@ -68,9 +69,13 @@ ARTIFACT_PATHS = {
         "answer_misq": os.path.join(_BASE, "panels", "answer_panel_MISQ.csv"),
     },
 
-    # LLM call cache directories（与 data/ 平级，不纳入 artifact 管理，已加入 .gitignore）
+    # LLM call cache directories（位于 `data/.cache/`，不纳入 artifact 管理，已加入 .gitignore）
     "cache": {
-        "llm_extension": os.path.join(_BASE, "..", ".cache", "llm_extension"),
-        "llm_deviation": os.path.join(_BASE, "..", ".cache", "llm_deviation"),
+        "llm_extension": os.path.join(_BASE, ".cache", "llm_extension"),
+        "llm_deviation": os.path.join(_BASE, ".cache", "llm_deviation"),
+        "question_ground_truth": os.path.join(_BASE, ".cache", "question_ground_truth"),
+        "question_ground_truth_claude_opus_4_7": os.path.join(_BASE, ".cache", "question_ground_truth_claude_opus_4_7"),
+        "question_ground_truth_gpt_5_5": os.path.join(_BASE, ".cache", "question_ground_truth_gpt_5_5"),
+        "question_ground_truth_gemini_pro_preview": os.path.join(_BASE, ".cache", "question_ground_truth_gemini_pro_preview"),
     },
 }
