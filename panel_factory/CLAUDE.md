@@ -111,6 +111,34 @@ For multi-step tasks, state a brief plan:
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
 ---
+## raw data 文件说明
+
+- `data/raw/` 包含四个核心 CSV 文件，分别存储不同层面的数据
+- **`cmn_base.csv`**
+  - Grain: `questionURL × cmnID`
+  - 内容：question + all answers 的 metadata（date、userURL、views、likes 等）
+  - 筛选规则：`cmnID == 0` 为 question rows，`cmnID >= 1` 为 answer rows
+  - 关键列：`questionURL`、`cmnID`、`date`、`userURL`、`views`、`focusNum`、`collectNum`、`netlikeNum`、`ask`、`answer`、`accept`
+- **`cmn_content.csv`**
+  - Grain: `questionURL × cmnID`
+  - 内容：question + all answers 的文本内容
+  - 筛选规则：`cmnID == 0` 为 question 原始文本，`cmnID >= 1` 为 answer 文本
+  - 关键列：`questionURL`、`cmnID`、`content_full_text`、`content_withoutcode`、`content_code_text`、`content_CN_text`
+- **`question_base.csv`**
+  - Grain: `questionURL`
+  - 内容：question-level metadata（tags、preAI indicator、ignoreAnsNum 等）
+  - 关键列：`questionURL`、`tags`、`tagURL`、`preAI`、`ignoreAnsNum`、`crawldate`
+- **`question_ai_content.csv`**
+  - Grain: `questionURL`
+  - 内容：question 下的 AI-generated answer 文本（如果存在）
+  - 关键列：`questionURL`、`preAI-content_full_text`、`preAI-content_withoutcode`、`preAI-content_code_text`、`preAI-content_CN_text`
+- **数据关系**
+  - Question 原始文本：从 `cmn_content.csv` 筛选 `cmnID == 0`
+  - AI answer 文本：从 `question_ai_content.csv` 读取 `preAI-content_full_text`
+  - Human answer 文本：从 `cmn_content.csv` 筛选 `cmnID >= 1`
+  - Question metadata：从 `cmn_base.csv` 筛选 `cmnID == 0`，merge `question_base.csv` 获取 tags 等额外信息
+  
+---
 ## pipeline consistency enforcement
 
 - 强制同步规则：当新建/修任何`build_*.py` 文件的时候，必须同步更新三处：
