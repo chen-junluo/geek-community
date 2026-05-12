@@ -1,26 +1,29 @@
-# Artifact:  feature/answer_accepted_answer_similarity_MISQ
-# 输入:      data/features/human_answer_intermediate_MISQ.csv, data/features/full_answer_intermediate_MISQ.csv
-# Grain:     human-answer-level (questionURL × resp_id)
-# Merge keys: questionURL, resp_id
-# 输出:      data/features/answer_accepted_answer_similarity_MISQ.csv
+# Artifact:    feature/human_answer_accepted_answer_similarity_MISQ
+# Grain:       human_answer
+# Merge Keys:  questionURL, resp_id
 #
-# 逻辑：
-# - 为每个 question 选择 baseline answer (anchor)，计算每个 human answer 与 baseline 的 full-text cosine similarity
-# - 输出变量：`SimWithAccept`
+# Inputs:
+#   - human_answer_intermediate_MISQ.csv
+#   - full_answer_intermediate_MISQ.csv
+# Output:      data/features/human_answer_accepted_answer_similarity_MISQ.csv
+#   - Index: questionURL, resp_id
+#   - Core: SimWithAccept
+#   - Derived: —
 #
-# Baseline 选择规则（优先级从高到低）：
-# 1. 如果有 accepted answer：
-#    - 只有 1 个 → 选这个（rule = "single_accept"）
-#    - 有多个 → 选 `netlikeNum` 最高的
-#      - 唯一最高 → 选这个（rule = "max_netlikes_among_accepted"）
-#      - 多个并列最高 → 按 `resp_id` 排序后拼接（rule = "concat_tied_accepted"）
-# 2. 如果没有 accepted answer：
-#    - 选 `netlikeNum` 最高的 human answer
-#      - 唯一最高 → 选这个（rule = "max_netlike_no_accept"）
-#      - 多个并列最高 → 按 `resp_id` 排序后拼接（rule = "concat_tied_netlike_no_accept"）
-# 3. 如果完全没有 human answer → baseline = NaN（rule = NaN）
-#
-# 注：`resp_id` 是按 chronological order 生成的，拼接时保证时间顺序
+# Logic:
+#   - 为每个 question 选择 baseline answer (anchor)，计算每个 human answer 与 baseline 的 full-text cosine similarity
+#   - 输出变量：`SimWithAccept`
+#   - Baseline 选择规则（优先级从高到低）：
+#     1. 如果有 accepted answer：
+#        - 只有 1 个 → 选这个（rule = "single_accept"）
+#        - 有多个 → 选 `netlikeNum` 最高的
+#          - 唯一最高 → 选这个（rule = "max_netlikes_among_accepted"）
+#          - 多个并列最高 → 按 `resp_id` 排序后拼接（rule = "concat_tied_accepted"）
+#     2. 如果没有 accepted answer：
+#        - 选 `netlikeNum` 最高的 human answer
+#          - 唯一最高 → 选这个（rule = "max_netlike_no_accept"）
+#          - 多个并列最高 → 按 `resp_id` 排序后拼接（rule = "concat_tied_netlike_no_accept"）
+#     3. 如果完全没有 human answer → baseline = NaN（rule = NaN）
 
 import os
 
@@ -32,7 +35,7 @@ from tqdm import tqdm
 from utils.paths import ARTIFACT_PATHS
 
 
-OUTPUT_CSV = ARTIFACT_PATHS["features"]["answer_accepted_answer_similarity_misq"]
+OUTPUT_CSV = ARTIFACT_PATHS["features"]["human_answer_accepted_answer_similarity_misq"]
 os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
 
 MODEL_NAME = "distiluse-base-multilingual-cased-v1"
