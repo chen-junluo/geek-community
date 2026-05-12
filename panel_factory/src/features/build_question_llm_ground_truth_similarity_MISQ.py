@@ -310,11 +310,20 @@ def build() -> pd.DataFrame:
         gt_df = _build_ground_truth_frame(question, model_slug)
         gt_cols = gt_df[["questionURL", "generated_answer", "error_reason", "prompt_version", "model_name"]].rename(columns={
             "generated_answer": f"ground_truth_answer__{model_slug}",
-            "error_reason": f"gt_error_reason__{model_slug}",
-            "prompt_version": f"gt_prompt_version__{model_slug}",
-            "model_name": f"gt_model_name__{model_slug}",
+            "error_reason": f"gt_error_reason_tmp__{model_slug}",
+            "prompt_version": f"gt_prompt_version_tmp__{model_slug}",
+            "model_name": f"gt_model_name_tmp__{model_slug}",
         })
         feature = feature.merge(gt_cols, on="questionURL", how="left")
+
+        feature[f"gt_error_reason__{model_slug}"] = feature[f"gt_error_reason_tmp__{model_slug}"]
+        feature[f"gt_prompt_version__{model_slug}"] = feature[f"gt_prompt_version_tmp__{model_slug}"]
+        feature[f"gt_model_name__{model_slug}"] = feature[f"gt_model_name_tmp__{model_slug}"]
+        feature = feature.drop(columns=[
+            f"gt_error_reason_tmp__{model_slug}",
+            f"gt_prompt_version_tmp__{model_slug}",
+            f"gt_model_name_tmp__{model_slug}",
+        ])
 
         has_gt_col = f"has_ground_truth__{model_slug}"
         sim_col = f"AISimWithGT__{model_slug}"

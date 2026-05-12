@@ -19,6 +19,19 @@
 - 主要逻辑：`raw data` → `feature tables` → `final panels`
   - panel 的构建，不是把所有逻辑都堆在一个大表上反复改
   - 更合适的方式：在某个 `intermediate` base table 上，late merge 多个 compact features，最后形成 panel
+- **Grain vs Intermediate 的区别**
+  - **Grain**：从分析层面看的，即它属于哪个 level 的 panel
+    - 四个核心 grain：`question`、`human_answer`、`full_answer`、`user_activity`
+    - Grain 决定了 merge keys 和数据粒度
+    - 例如：`human_answer` grain 的 merge keys 是 `questionURL × resp_id`
+  - **Intermediate**：从数据生成角度看的，如果后续会被不断复用，那么它就是一个 Intermediate
+    - Intermediate 是 base table，minimal processing
+    - Feature 是 compact table，specific metrics
+    - Panel 是 final table，late merge features onto intermediate
+  - **命名规范**
+    - Feature 文件名必须以 grain 开头：`{grain}_{feature_name}.csv`
+    - Intermediate 文件名必须包含 `_intermediate` 后缀：`{grain}_intermediate.csv`
+    - 列名也包含 grain prefix（除了 merge keys）
 - 内部文件架构：
   - `data/raw/`：原始数据，只读
   - `data/features/`：生成的 feature 表，以及部分重要 intermediate
@@ -54,6 +67,50 @@
 <!-- 在此添加你的 Projects 层特定规则 -->
 
 ---
+## Four principle when you are writing code
+### 1. Think Before Coding
+**Don't assume. Don't hide confusion. Surface tradeoffs.**
+Before implementing:
+- State your assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them - don't pick silently.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, stop. Name what's confusing. Ask.
+### 2. Simplicity First
+**Minimum code that solves the problem. Nothing speculative.**
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No "flexibility" or "configurability" that wasn't requested.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
+Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
+
+### 3. Surgical Changes
+**Touch only what you must. Clean up only your own mess.**
+When editing existing code:
+- Don't "improve" adjacent code, comments, or formatting.
+- Don't refactor things that aren't broken.
+- Match existing style, even if you'd do it differently.
+- If you notice unrelated dead code, mention it - don't delete it.
+When your changes create orphans:
+- Remove imports/variables/functions that YOUR changes made unused.
+- Don't remove pre-existing dead code unless asked.
+The test: Every changed line should trace directly to the user's request.
+
+### 4. Goal-Driven Execution
+**Define success criteria. Loop until verified.**
+Transform tasks into verifiable goals:
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Refactor X" → "Ensure tests pass before and after"
+For multi-step tasks, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+3. [Step] → verify: [check]
+```
+Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
+
+---
 ## pipeline consistency enforcement
 
 - 强制同步规则：当新建/修任何`build_*.py` 文件的时候，必须同步更新三处：
@@ -78,6 +135,10 @@
 - 四个核心 grain 层次
   - **Question grain**: intermediate `question_intermediate.csv`，merge key `questionURL`，用于 question metadata / text / aggregations
   - **Human Answer grain**: intermediate `human_answer_intermediate.csv`，merge key `questionURL × resp_id`，用于 human-authored answers（不包含 AI answers）
+    - **Merge key 兼容性**：`human_answer_intermediate` 同时包含 `cmnID` 和 `resp_id` 两个 answer-level index
+      - `resp_id`：canonical merge key，按 `questionURL` 内时间顺序从 1 递增，推荐用于新代码
+      - `cmnID`：legacy merge key，来自 raw data，保留用于向后兼容
+      - 两者都可用于 merge，但新 feature builders 应优先使用 `resp_id`
   - **Full Answer grain**: intermediate `full_answer_intermediate.csv`，merge key `questionURL × answer_id`，用于 AI answer + human answers 的完整 answer universe
   - **User Activity grain**: intermediate `all_activities_intermediate.csv`，merge key `userURL × date × activity_type`，用于 user-level activities（post question / answer / receive likes 等）
 - Feature 层命名规范
