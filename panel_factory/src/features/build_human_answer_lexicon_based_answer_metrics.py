@@ -119,18 +119,8 @@ def _detect_personal_experience(text) -> tuple[int, int, str]:
 
 def build() -> pd.DataFrame:
     human_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["human_answer_misq"])
-    full_answer = pd.read_csv(ARTIFACT_PATHS["intermediate"]["full_answer_misq"])
 
-    # 从 full_answer 中提取 human answer 的文本
-    human_text = (
-        full_answer[full_answer["answer_source"] == "human_answer"]
-        [["questionURL", "resp_id", "answer_text"]]
-        .drop_duplicates(["questionURL", "resp_id"])
-    )
-
-    feature = human_answer[["questionURL", "resp_id", "cmnID"]].copy()
-    feature = feature.merge(human_text, on=["questionURL", "resp_id"], how="left")
-    feature = feature.rename(columns={"answer_text": "human_answer_text"})
+    feature = human_answer[["questionURL", "resp_id", "cmnID", "human_answer_text"]].copy()
 
     detected = feature["human_answer_text"].apply(_detect_personal_experience)
     feature[[
