@@ -13,12 +13,27 @@
 - Do not rename columns, merge keys, or staged output files unless all downstream consumers are updated together
 - Keep raw data read-only
 
+- 不要重复实现前序步骤已经完成的处理逻辑
+  - 如果当前变量的生成需要依赖 raw-like source、某些 intermediate 或 feature，而这些 intermediate 或 feature 已经可以由 `src/` 下现有脚本生成，则默认优先复用已有产物
+  - 当前脚本应直接使用这些已有的 intermediate 或 feature 作为输入，不要在本文件中重复生成相同产物
+- 每次交付时：
+  - 默认要求每个代码文件内部是完整的、`self-consistent` 的
+  - 不要出现注释描述、实际逻辑、命名含义彼此不一致的情况
+- 对代码注释的处理：
+  - 不要删除中英夹杂的现有注释
+  - 这类注释通常包含 `context`、研究过程信息或 `domain knowledge`
+  - 如果代码改动改变了这些注释的含义，应更新内容，而不是直接删掉
+- 我看重 canonical source clarity
+  - 优先复用上游有的变量，避免重复 alias，避免 downstream 误读和缺失值污染
+
 ---
 ## 2. 核心概念与架构
 
 - 主要逻辑：`raw data` → `feature tables` → `final panels`
-  - panel 的构建，不是把所有逻辑都堆在一个大表上反复改
-  - 更合适的方式：在某个 `intermediate` base table 上，late merge 多个 compact features，最后形成 panel
+  - panel 的构建，不要在一个 full panel 上一路追加很多变量，再输出更大的 intermediate
+  - 优先保持 `intermediate`、`features`、`panel` 三层解耦
+  - panel builder 的职责应尽量收敛到：读取 intermediate、merge features、写出 panel
+
 - **Grain vs Intermediate 的区别**
   - **Grain**：从分析层面看的，即它属于哪个 level 的 panel
     - 四个核心 grain：`question`、`human_answer`、`full_answer`、`user_activity`
@@ -31,20 +46,19 @@
   - **命名规范**
     - Feature 文件名必须以 grain 开头：`{grain}_{feature_name}.csv`
     - Intermediate 文件名必须包含 `_intermediate` 后缀：`{grain}_intermediate.csv`
-    - 列名也包含 grain prefix（除了 merge keys）
 - 内部文件架构：
   - `data/raw/`：原始数据，只读
   - `data/features/`：生成的 feature 表，以及部分重要 intermediate
   - `data/panels/`：最终 panel 数据
-  - `src/features/`：feature 生成脚本
-  - `src/panels/`：panel 聚合脚本
+  - `src/features/`：生成 compact feature tables
+  - `src/panels/`：把 features late merge 到某个 intermediate 上，生成 final panel
   - `src/utils/`：shared utilities，例如 `paths`、registry、I/O helpers
   - `documents/`：可选参考文档
     - 作用：减少重复阅读、节省 token、方便复查
     - 不是必须层，也不是 rule source
     - 规则与协作方式以 `CLAUDE.md` 为准
     - 如果 `documents/` 与 `CLAUDE.md` 不一致，应优先修正或忽略 `documents/`
-    - 当前默认参考：`documents/features_registry.md`、`documents/pipeline_dependency_table.md`、`documents/naming_conventions.md`
+    - 当前默认参考：`documents/features_registry.md`、`documents/pipeline_dependency_table.md`
     - 如需修改或沉淀，不仅要更新对应 `documents/`，也要在合适层级的 `CLAUDE.md` 中补充 reference
   - `notebooks/`：dashboard-style orchestration，供用户手动运行 pipeline，调用 `src/` 下的各类 Python 脚本
     - 不要默认把 notebooks 当作一次性实验文件
@@ -59,6 +73,37 @@
 - 如果已有 intermediate 或 feature 已能支持当前任务，直接复用，不要重复造轮子
 - 涉及 artifact 依赖关系时，优先参考 `documents/pipeline_dependency_table.md`
 - 涉及 `feature` 是否已存在、是否应复用时，优先参考 `documents/features_registry.md`
+- 对于非生成feature的，简单的查询检索的任务，直接后台撰写代码然后告诉我结果。**如无要求，不要在本地写入py文件和报告！**
+
+
+---
+## 4. 每个 `build_*.py` 文件顶部默认应有简短 bullets，且保持pipeline consistency
+
+- 强制同步规则：当新建/修任何`build_*.py` 文件的时候，必须同步更新三处：
+  1. **修改 `build_*.py` 文件的 structured header，确保与实际代码逻辑一致**
+  2. **使用 `scripts/update_dependency_docs.py` 更新 `documents/pipeline_dependency_table.md` 的 graph 和 table**
+- Structured Header 强制要求
+  - 所有 `build_*.py` 文件必须包含 structured header
+  - Header 格式必须严格遵守 `documents/build_file_header_template.md` 规范
+  - 修改代码逻辑时，必须同步更新 header
+  - Header 中的信息必须与实际代码逻辑一致
+
+---
+## 5. 每次生成新 feature 后，默认反馈该 feature 的 descriptive statistics
+
+- 至少包括 `min`、`max`、`mean`
+- 大概告诉我这个变量的 distribution 的数值范围，让我了解这个变量分布是咋样的
+- 默认补充若干 sample rows，优先看命中值为 `1` 的 case
+- 注意如果 sample 爆长你不要直接输出，你简略告诉我就行保留关键要点，我只是想看是不是识别的准
+- 不需要把描述性统计和 sample 什么的存成 csv，直接在对话中告诉我
+
+---
+## 6. 运行 python 脚本
+
+- 不要直接从脚本文件路径裸调用 Python，否则可能报 `ModuleNotFoundError`
+- 默认用 notebook 对应的解释器，并在 workspace 根目录下设置 `PYTHONPATH=/Users/dylanchen/Desktop/current_folder_name/panel_factory/src` 后再运行
+- 例如：`PYTHONPATH=/Users/dylanchen/Desktop/current_folder_name/panel_factory/src /Users/dylanchen/miniconda3/envs/cityu/bin/python panel_factory/src/panels/build_question_panel.py`
+
 
 ---
 ---
@@ -67,51 +112,7 @@
 <!-- 在此添加你的 Projects 层特定规则 -->
 
 ---
-## Four principle when you are writing code
-### 1. Think Before Coding
-**Don't assume. Don't hide confusion. Surface tradeoffs.**
-Before implementing:
-- State your assumptions explicitly. If uncertain, ask.
-- If multiple interpretations exist, present them - don't pick silently.
-- If a simpler approach exists, say so. Push back when warranted.
-- If something is unclear, stop. Name what's confusing. Ask.
-### 2. Simplicity First
-**Minimum code that solves the problem. Nothing speculative.**
-- No features beyond what was asked.
-- No abstractions for single-use code.
-- No "flexibility" or "configurability" that wasn't requested.
-- No error handling for impossible scenarios.
-- If you write 200 lines and it could be 50, rewrite it.
-Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, simplify.
-
-### 3. Surgical Changes
-**Touch only what you must. Clean up only your own mess.**
-When editing existing code:
-- Don't "improve" adjacent code, comments, or formatting.
-- Don't refactor things that aren't broken.
-- Match existing style, even if you'd do it differently.
-- If you notice unrelated dead code, mention it - don't delete it.
-When your changes create orphans:
-- Remove imports/variables/functions that YOUR changes made unused.
-- Don't remove pre-existing dead code unless asked.
-The test: Every changed line should trace directly to the user's request.
-
-### 4. Goal-Driven Execution
-**Define success criteria. Loop until verified.**
-Transform tasks into verifiable goals:
-- "Add validation" → "Write tests for invalid inputs, then make them pass"
-- "Fix the bug" → "Write a test that reproduces it, then make it pass"
-- "Refactor X" → "Ensure tests pass before and after"
-For multi-step tasks, state a brief plan:
-```
-1. [Step] → verify: [check]
-2. [Step] → verify: [check]
-3. [Step] → verify: [check]
-```
-Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
-
----
-## raw data 文件说明
+## raw data 文件及核心自变量说明
 
 - `data/raw/` 包含四个核心 CSV 文件，分别存储不同层面的数据
 - **`cmn_base.csv`**
@@ -137,25 +138,10 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
   - AI answer 文本：从 `question_ai_content.csv` 读取 `preAI-content_full_text`
   - Human answer 文本：从 `cmn_content.csv` 筛选 `cmnID >= 1`
   - Question metadata：从 `cmn_base.csv` 筛选 `cmnID == 0`，merge `question_base.csv` 获取 tags 等额外信息
-  
----
-## pipeline consistency enforcement
+- treatment contract
+  - `preAI` 是整个 `panel_factory` pipeline 的 canonical treatment variable。
+  - 语义：`preAI == 1` 表示该 `questionURL` 属于 treatment，即 human answers 之前存在 AI answer；`preAI == 0` 表示 control。
 
-- 强制同步规则：当新建/修任何`build_*.py` 文件的时候，必须同步更新三处：
-  1. **修改 `build_*.py` 文件的 structured header**
-  2. **更新 `documents/pipeline_dependency_table.md` 的 graph 和 table**
-- Structured Header 强制要求
-
-- 所有 `build_*.py` 文件必须包含 structured header
-- Header 格式必须严格遵守 `documents/build_file_header_template.md` 规范
-- 修改代码逻辑时，必须同步更新 header
-- Header 中的信息必须与实际代码逻辑一致
-
----
-## treatment contract
-
-- `preAI` 是整个 `panel_factory` pipeline 的 canonical treatment variable。
-- 语义：`preAI == 1` 表示该 `questionURL` 属于 treatment，即 human answers 之前存在 AI answer；`preAI == 0` 表示 control。
 
 ---
 ## data grain 层次与 merge index contract
@@ -169,10 +155,6 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
       - 两者都可用于 merge，但新 feature builders 应优先使用 `resp_id`
   - **Full Answer grain**: intermediate `full_answer_intermediate.csv`，merge key `questionURL × answer_id`，用于 AI answer + human answers 的完整 answer universe
   - **User Activity grain**: intermediate `all_activities_intermediate.csv`，merge key `userURL × date × activity_type`，用于 user-level activities（post question / answer / receive likes 等）
-- Feature 层命名规范
-  - 所有 feature 文件名必须以 grain 开头：`{grain}_{feature_name}.csv`
-  - 列名也包含 grain prefix（除了 merge keys）
-  - 例如：`question_content_metrics.csv` 中的列为 `question_textLength`、`question_imgNum`
 - Intermediate 数量控制
   - 严格限制为 4 个 intermediates，不再新增
   - 所有衍生变量归入 `features/`
