@@ -9,12 +9,12 @@
 # Output:      data/features/question_llm_ground_truth_similarity_MISQ.csv
 #   - Index: questionURL
 #   - Core: has_ai_answer, AISimWithGT__*, has_ground_truth__*, gt_error_reason__*
-#   - Derived: prompt_version, gt_model_name__*
+#   - Derived: gt_provider__*, gt_prompt_version__*, gt_model_name__*
 #
 # Logic:
 #   - 在 MISQ question universe 内，对固定三套模型预留 wide columns
 #   - 支持只运行单个模型；未运行的模型列保持为空
-#   - ground truth 通过 OpenRouter 调用 LLM，结果缓存到各自模型目录，命中 cache 时不重复调用 API
+#   - `claude_opus_4_7` 通过当前 custom API base 调用 OpenAI-compatible chat completions，并将结果缓存到各自模型目录
 #   - 将每个模型的 ground truth 与 AI answer 做 semantic similarity，输出单个 wide feature table
 
 import json
@@ -36,26 +36,33 @@ from utils.paths import ARTIFACT_PATHS
 
 MODEL_SPECS = {
     "claude_opus_4_7": {
+        "provider": "custom_api_base",
         "model_name": "anthropic/claude-opus-4.7",
+        "api_key": "sk-27d25660b84405265f3b31f99bfb51c8fe8cd05a9f11392050e379085d648809",
+        "base_url": "https://claude.tokencode.fun/v1",
         "cache_dir": ARTIFACT_PATHS["cache"]["question_ground_truth_claude_opus_4_7"],
     },
     "gpt_5_5": {
+        "provider": "openrouter",
         "model_name": "openai/gpt-5.5",
+        "api_key": os.environ.get("OPENROUTER_API_KEY", ""),
+        "base_url": os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/"),
         "cache_dir": ARTIFACT_PATHS["cache"]["question_ground_truth_gpt_5_5"],
     },
     "gemini_pro_preview": {
+        "provider": "openrouter",
         "model_name": "google/gemini-2.5-pro-preview",
+        "api_key": os.environ.get("OPENROUTER_API_KEY", ""),
+        "base_url": os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/"),
         "cache_dir": ARTIFACT_PATHS["cache"]["question_ground_truth_gemini_pro_preview"],
     },
 }
 MODEL_EXECUTION_ORDER = ["claude_opus_4_7", "gpt_5_5", "gemini_pro_preview"]
 MODEL_NAME_TO_SLUG = {spec["model_name"]: slug for slug, spec in MODEL_SPECS.items()}
-
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
-OPENROUTER_BASE_URL = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "anthropic/claude-opus-4.7").strip()
-OPENROUTER_MAX_WORKERS = min(int(os.environ.get("OPENROUTER_MAX_WORKERS", "2")), 2)
-OPENROUTER_REQUEST_TIMEOUT = int(os.environ.get("OPENROUTER_REQUEST_TIMEOUT", "120"))
+DEFAULT_MODEL_SLUG = "claude_opus_4_7"
+MODEL_SELECTOR = os.environ.get("QUESTION_GROUND_TRUTH_MODEL", DEFAULT_MODEL_SLUG).strip()
+MAX_WORKERS = min(int(os.environ.get("QUESTION_GROUND_TRUTH_MAX_WORKERS", "10")), 10)
+REQUEST_TIMEOUT = int(os.environ.get("QUESTION_GROUND_TRUTH_REQUEST_TIMEOUT", "120"))
 MAX_RETRIES = 3
 RETRY_BACKOFF_SECONDS = [2, 4, 8]
 MAX_TEXT_CHARS = 6000
@@ -125,11 +132,11 @@ def _normalize_model_slug(model_selector: str) -> str:
         return selector
     if selector in MODEL_NAME_TO_SLUG:
         return MODEL_NAME_TO_SLUG[selector]
-    raise ValueError(f"不支持的 OPENROUTER_MODEL: {model_selector}")
+    raise ValueError(f"不支持的 QUESTION_GROUND_TRUTH_MODEL: {model_selector}")
 
 
 def _selected_model_slugs() -> list[str]:
-    return [_normalize_model_slug(OPENROUTER_MODEL)]
+    return [_normalize_model_slug(MODEL_SELECTOR)]
 
 
 def _build_cache_key(question_url: str, model_slug: str) -> str:
@@ -160,28 +167,30 @@ def _save_cache(cache_dir: str, cache_key: str, data: dict) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def _build_client() -> OpenAI:
-    return OpenAI(base_url=OPENROUTER_BASE_URL, api_key=OPENROUTER_API_KEY)
+def _build_client(spec: dict) -> OpenAI:
+    return OpenAI(base_url=spec["base_url"], api_key=spec["api_key"])
 
 
-def _call_openrouter(question_text: str, model_name: str) -> tuple[Optional[str], Optional[str]]:
-    if not OPENROUTER_API_KEY:
-        return None, "缺少 OPENROUTER_API_KEY 环境变量"
+def _call_llm(question_text: str, spec: dict) -> tuple[Optional[str], Optional[str]]:
+    if not spec["api_key"]:
+        return None, f"缺少 {spec['provider']} API key"
 
-    client = _build_client()
+    client = _build_client(spec)
     prompt = GROUND_TRUTH_PROMPT.format(question_text=_truncate_text(question_text))
     last_error = None
 
     for attempt in range(MAX_RETRIES):
         try:
-            response = client.chat.completions.create(
-                model=model_name,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.2,
-                max_tokens=1200,
-                timeout=OPENROUTER_REQUEST_TIMEOUT,
-                extra_body={"reasoning": {"enabled": True}},
-            )
+            request_kwargs = {
+                "model": spec["model_name"],
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0,
+                "max_tokens": 1200,
+                "timeout": REQUEST_TIMEOUT,
+            }
+            if spec["provider"] == "openrouter":
+                request_kwargs["extra_body"] = {"reasoning": {"enabled": True}}
+            response = client.chat.completions.create(**request_kwargs)
             message = response.choices[0].message.content
             if isinstance(message, str) and message.strip():
                 return message.strip(), None
@@ -201,10 +210,8 @@ def _call_openrouter(question_text: str, model_name: str) -> tuple[Optional[str]
 
 def _generate_ground_truth_for_question(row: pd.Series, model_slug: str) -> dict:
     spec = MODEL_SPECS[model_slug]
-    model_name = spec["model_name"]
-    cache_dir = spec["cache_dir"]
     cache_key = _build_cache_key(row["questionURL"], model_slug)
-    cached = _load_cache(cache_dir, cache_key)
+    cached = _load_cache(spec["cache_dir"], cache_key)
     if cached is not None:
         return cached
 
@@ -213,27 +220,27 @@ def _generate_ground_truth_for_question(row: pd.Series, model_slug: str) -> dict
         return {
             "questionURL": row["questionURL"],
             "cache_key": cache_key,
-            "provider": "openrouter",
-            "model_name": model_name,
+            "provider": spec["provider"],
+            "model_name": spec["model_name"],
             "prompt_version": PROMPT_VERSION,
             "generated_answer": None,
             "error_reason": "缺少 question_text",
             "api_call_timestamp": pd.Timestamp.utcnow().isoformat(),
         }
 
-    generated_answer, error_reason = _call_openrouter(str(question_text), model_name)
+    generated_answer, error_reason = _call_llm(str(question_text), spec)
     result = {
         "questionURL": row["questionURL"],
         "cache_key": cache_key,
-        "provider": "openrouter",
-        "model_name": model_name,
+        "provider": spec["provider"],
+        "model_name": spec["model_name"],
         "prompt_version": PROMPT_VERSION,
         "generated_answer": generated_answer,
         "error_reason": error_reason,
         "api_call_timestamp": pd.Timestamp.utcnow().isoformat(),
     }
     if generated_answer:
-        _save_cache(cache_dir, cache_key, result)
+        _save_cache(spec["cache_dir"], cache_key, result)
     return result
 
 
@@ -242,7 +249,7 @@ def _build_ground_truth_frame(question: pd.DataFrame, model_slug: str) -> pd.Dat
     records = question_rows.to_dict("records")
     results = []
 
-    with ThreadPoolExecutor(max_workers=OPENROUTER_MAX_WORKERS) as executor:
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         future_to_question = {
             executor.submit(_generate_ground_truth_for_question, pd.Series(record), model_slug): record["questionURL"]
             for record in records
@@ -256,7 +263,7 @@ def _build_ground_truth_frame(question: pd.DataFrame, model_slug: str) -> pd.Dat
                     results.append({
                         "questionURL": future_to_question[future],
                         "cache_key": _build_cache_key(future_to_question[future], model_slug),
-                        "provider": "openrouter",
+                        "provider": spec["provider"],
                         "model_name": spec["model_name"],
                         "prompt_version": PROMPT_VERSION,
                         "generated_answer": None,
@@ -279,6 +286,7 @@ def _initialize_output_columns(feature: pd.DataFrame) -> pd.DataFrame:
         feature[f"AISimWithGT__{model_slug}"] = np.nan
         feature[f"has_ground_truth__{model_slug}"] = np.nan
         feature[f"gt_error_reason__{model_slug}"] = np.nan
+        feature[f"gt_provider__{model_slug}"] = np.nan
         feature[f"gt_prompt_version__{model_slug}"] = np.nan
         feature[f"gt_model_name__{model_slug}"] = np.nan
     return feature
@@ -304,11 +312,12 @@ def build() -> pd.DataFrame:
 
     similarity_model = _load_similarity_model()
     selected_model_slugs = _selected_model_slugs()
-    logger.info(f"本次仅执行模型: {selected_model_slugs}，并发数: {OPENROUTER_MAX_WORKERS}")
+    logger.info(f"本次仅执行模型: {selected_model_slugs}，并发数: {MAX_WORKERS}")
 
     for model_slug in selected_model_slugs:
         gt_df = _build_ground_truth_frame(question, model_slug)
-        gt_cols = gt_df[["questionURL", "generated_answer", "error_reason", "prompt_version", "model_name"]].rename(columns={
+        gt_cols = gt_df[["questionURL", "provider", "generated_answer", "error_reason", "prompt_version", "model_name"]].rename(columns={
+            "provider": f"gt_provider_tmp__{model_slug}",
             "generated_answer": f"ground_truth_answer__{model_slug}",
             "error_reason": f"gt_error_reason_tmp__{model_slug}",
             "prompt_version": f"gt_prompt_version_tmp__{model_slug}",
@@ -316,10 +325,12 @@ def build() -> pd.DataFrame:
         })
         feature = feature.merge(gt_cols, on="questionURL", how="left")
 
+        feature[f"gt_provider__{model_slug}"] = feature[f"gt_provider_tmp__{model_slug}"]
         feature[f"gt_error_reason__{model_slug}"] = feature[f"gt_error_reason_tmp__{model_slug}"]
         feature[f"gt_prompt_version__{model_slug}"] = feature[f"gt_prompt_version_tmp__{model_slug}"]
         feature[f"gt_model_name__{model_slug}"] = feature[f"gt_model_name_tmp__{model_slug}"]
         feature = feature.drop(columns=[
+            f"gt_provider_tmp__{model_slug}",
             f"gt_error_reason_tmp__{model_slug}",
             f"gt_prompt_version_tmp__{model_slug}",
             f"gt_model_name_tmp__{model_slug}",
@@ -353,6 +364,7 @@ def build() -> pd.DataFrame:
             f"AISimWithGT__{model_slug}",
             f"has_ground_truth__{model_slug}",
             f"gt_error_reason__{model_slug}",
+            f"gt_provider__{model_slug}",
             f"gt_prompt_version__{model_slug}",
             f"gt_model_name__{model_slug}",
         ])
