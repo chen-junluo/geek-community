@@ -1,11 +1,20 @@
-# Artifact:  intermediate/question_MISQ
-# 输入:      data/features/question_intermediate.csv
-# Grain:     question-level (questionURL)
-# Merge keys: questionURL
-# 输出:      data/features/question_intermediate_MISQ.csv
+# Artifact:    intermediate/question_intermediate_MISQ
+# Grain:       question
+# Merge Keys:  questionURL
 #
-# 逻辑：筛选 MISQ sample questions (ask == 1 & date >= 2023-01-01)
-#       这是唯一实现 MISQ 筛选逻辑的地方，其他 MISQ builders 通过 questionURL join 继承
+# Inputs:
+#   - question_intermediate.csv
+#
+# Output:    data/features/question_intermediate_MISQ.csv
+#   - Index: questionURL
+#   - Core: title, date, tags, tagURL, views, focusNum, collectNum, preAI, crawldate, ignoreAnsNum, question_text
+#   - Derived: —
+#
+# Logic:
+#   - Filter MISQ sample: date >= 2023-01-01
+#   - question_intermediate already contains only questions (no need to check ask==1)
+#   - This is the canonical MISQ sample definition
+#   - All other MISQ builders inherit this sample via questionURL join
 
 import os
 
@@ -14,7 +23,7 @@ import pandas as pd
 from utils.paths import ARTIFACT_PATHS
 
 
-OUTPUT_CSV = ARTIFACT_PATHS["intermediate"]["question_MISQ"]
+OUTPUT_CSV = ARTIFACT_PATHS["intermediate"]["question_misq"]
 os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
 
 
@@ -24,10 +33,10 @@ def build() -> pd.DataFrame:
     # Convert date to datetime
     question["date"] = pd.to_datetime(question["date"], errors="coerce")
 
-    # MISQ sample filter: ask == 1 & date >= 2023-01-01
+    # MISQ sample filter: date >= 2023-01-01
+    # Note: question_intermediate only contains questions (no need to check ask==1)
     question_MISQ = question[
-        (question["ask"] == 1) &
-        (question["date"] >= "2023-01-01")
+        question["date"] >= "2023-01-01"
     ].copy()
 
     # Reset index

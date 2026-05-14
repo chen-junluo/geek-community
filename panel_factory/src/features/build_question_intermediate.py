@@ -1,18 +1,25 @@
-# Artifact:  intermediate/question
-# 输入:      data/raw/cmn_base.csv, data/raw/cmn_content.csv, data/raw/question_ai_content.csv
-# Grain:     question-level (questionURL)
-# Merge keys: questionURL
-# 输出:      data/features/question_intermediate.csv
+# Artifact:    intermediate/question_intermediate
+# Grain:       question
+# Merge Keys:  questionURL
 #
-# 逻辑：标准化 question universe，保留 question metadata + question text + canonical `preAI`，
-#       供 question-level features / panels 复用。
+# Inputs:
+#   - cmn_base.csv (cmnID==0)  # raw question metadata + asker-side reputation & badge fields
+#   - cmn_content.csv  # raw question text
+#   - question_base.csv  # raw question tags and ignoreAnsNum
 #
-# 补充列（相比旧版）：
-#   - views, focusNum, collectNum (从 cmn_base)
-#   - preAI (从 question_ai_content 推断)
+# Output:      data/features/question_intermediate.csv
+#   - Index: questionURL
+#   - Core: title, userURL, date, tags, tagURL, views, focusNum, collectNum, preAI, crawldate, ignoreAnsNum, question_text
+#   - Derived: carries asker-side `cmn_base` fields at `cmnID == 0`, including `accumRep`, `accumGold`, `accumSilver`, `accumCopper`
+#
+# Logic:
+#   - 筛选 cmnID==0 的 question rows
+#   - 保留 question row 自带的 asker-side reputation & badge fields
+#   - 合并 question metadata, tags, text
+#   - 生成 preAI treatment indicator
+#   - 禁止使用 question_id
 
 import os
-
 import pandas as pd
 import numpy as np
 
@@ -23,90 +30,76 @@ OUTPUT_CSV = ARTIFACT_PATHS["intermediate"]["question"]
 os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
 
 
-def _load_raw_tables(raw_dir: str):
-    cmn_base = pd.read_csv(os.path.join(raw_dir, "cmn_base.csv"))
-    cmn_content = pd.read_csv(os.path.join(raw_dir, "cmn_content.csv"))
-    question_ai_content = pd.read_csv(os.path.join(raw_dir, "question_ai_content.csv"), low_memory=False)
-
-    cmn_base["date"] = pd.to_datetime(cmn_base["date"], errors="coerce")
-
-    # Filter to questions only (cmnID == 0)
-    question_base = (
-        cmn_base[cmn_base["cmnID"] == 0]
-        .copy()
-        .sort_values(["date", "questionURL"], na_position="last")
-        .reset_index(drop=True)
-    )
-
-    # Extract question text
-    question_text = (
-        cmn_content[cmn_content["cmnID"] == 0][["questionURL", "cmnID", "content_full_text"]]
-        .drop_duplicates(["questionURL", "cmnID"])
-        .rename(columns={"content_full_text": "question_text"})
-    )
-
-    # Infer preAI from question_ai_content
-    ai_text = pd.Series(pd.NA, index=question_ai_content.index, dtype="object")
-    if "preAI-content_full_text" in question_ai_content.columns:
-        ai_text = question_ai_content["preAI-content_full_text"]
-    if "preAI-content_CN_text" in question_ai_content.columns:
-        ai_text = ai_text.fillna(question_ai_content["preAI-content_CN_text"])
-
-    preai_lookup = question_ai_content[["questionURL"]].copy()
-    preai_lookup["preAI"] = (
-        ai_text.notna()
-        & ai_text.astype(str).str.strip().ne("")
-    ).astype(int)
-    preai_lookup = preai_lookup.drop_duplicates("questionURL")
-
-    return question_base, question_text, preai_lookup
-
-
 def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
-    question_base, question_text, preai_lookup = _load_raw_tables(raw_dir)
+    print("Loading raw data...")
+
+    # Load cmn_base (questions only)
+    cmn_base = pd.read_csv(os.path.join(raw_dir, "cmn_base.csv"))
+    cmn_base["date"] = pd.to_datetime(cmn_base["date"]).dt.tz_localize(None)
+    question_base_from_cmn = cmn_base[cmn_base["cmnID"] == 0].copy()
+
+    # Load question_base (has tags, tagURL, ignoreAnsNum)
+    question_base = pd.read_csv(os.path.join(raw_dir, "question_base.csv"))
+
+    # Load cmn_content (for question text)
+    cmn_content = pd.read_csv(os.path.join(raw_dir, "cmn_content.csv"))
+    question_content = cmn_content[cmn_content["cmnID"] == 0][["questionURL", "content_full_text"]].copy()
+    question_content = question_content.rename(columns={"content_full_text": "question_text"})
+
+    print("Merging question data...")
+
+    # Start with question_base_from_cmn
+    question = question_base_from_cmn.copy()
+
+    # Merge question_base to get tags, tagURL, ignoreAnsNum, preAI, crawldate
+    question = question.merge(
+        question_base[["questionURL", "tags", "tagURL", "ignoreAnsNum", "preAI", "crawldate"]],
+        on="questionURL",
+        how="left"
+    )
 
     # Merge question text
-    question = question_base.merge(
-        question_text,
-        on=["questionURL", "cmnID"],
-        how="left",
-    )
+    question = question.merge(question_content, on="questionURL", how="left")
 
-    # Merge preAI indicator
-    question = question.merge(preai_lookup, on="questionURL", how="left")
-    question["preAI"] = question["preAI"].fillna(0).astype(int)
+    if "preAI" in question.columns:
+        question["preAI"] = question["preAI"].fillna(0).astype(int)
 
-    # Select and order columns
-    # Core columns
-    core_cols = ["questionURL", "title", "question_text", "date", "preAI"]
+    # Select only the columns we need for clean intermediate
+    output_cols = [
+        "questionURL",
+        "title",
+        "userURL",
+        "date",
+        "tags",
+        "tagURL",
+        "views",
+        "focusNum",
+        "collectNum",
+        "preAI",
+        "crawldate",
+        "ignoreAnsNum",
+        "question_text",
+        "accumRep",
+        "accumGold",
+        "accumSilver",
+        "accumCopper",
+    ]
 
-    # Metadata columns
-    metadata_cols = ["views", "focusNum", "collectNum", "ask"]
+    # Check which columns exist
+    existing_cols = [col for col in output_cols if col in question.columns]
+    question = question[existing_cols]
 
-    # User columns
-    user_cols = ["userURL", "userName", "accumRep", "accumGold", "accumSilver", "accumCopper"]
+    # Sort by date
+    question = question.sort_values("date").reset_index(drop=True)
 
-    # Formatting columns (from question itself, not AI)
-    formatting_cols = ["imgNum", "brNum", "codeNum", "inlinecodeNum", "interlinecodeNum", "hrefNum"]
-
-    # Other columns
-    other_cols = ["location", "secdate", "seclocation", "answer", "hiddenanswer", "accept", "netlikeNum"]
-
-    # Build ordered column list
-    ordered_cols = core_cols + metadata_cols + user_cols + formatting_cols + other_cols
-
-    # Add any remaining columns not in ordered list
-    remaining_cols = [col for col in question.columns if col not in ordered_cols]
-    question = question[ordered_cols + remaining_cols]
-
-    # Drop cmnID (always 0 for questions)
-    if "cmnID" in question.columns:
-        question = question.drop(columns=["cmnID"])
-
+    # Save
     question.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")
-    print(f"question_intermediate 已保存: {OUTPUT_CSV}  shape={question.shape}")
-    print(f"  - date range: {question['date'].min()} to {question['date'].max()}")
-    print(f"  - preAI questions: {question['preAI'].sum()} ({question['preAI'].mean()*100:.1f}%)")
+    print(f"✓ question_intermediate saved: {OUTPUT_CSV}")
+    print(f"  Shape: {question.shape}")
+    print(f"  Date range: {question['date'].min()} to {question['date'].max()}")
+    if "preAI" in question.columns:
+        print(f"  preAI questions: {question['preAI'].sum()} ({question['preAI'].mean()*100:.1f}%)")
+
     return question
 
 
