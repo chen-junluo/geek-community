@@ -4,7 +4,6 @@ Thumbs.db
 *.swo
 .vscode/
 .idea/
-.claude/
 __pycache__/
 *.pyc
 .cache/
