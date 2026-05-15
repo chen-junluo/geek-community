@@ -1,97 +1,123 @@
 ---
 name: regression-reports
-description: Generate formatted Word documents from R regression code. Automatically adds HTML output logic if missing, runs the code, parses HTML tables, applies variable name mapping, and creates publication-ready regression reports.
-trigger: Use when the user selects R regression code and asks to generate reports, output tables, or create Word documents from regression results.
+description: Generate formatted Word documents from R regression HTML tables. Workflow: align HTML export naming and model labels in R, user runs R manually, then Claude parses HTML tables, applies variable mappings, and creates a publication-ready Word report.
+trigger: Use when the user wants a Word regression report from R `htmlreg()` outputs, or wants help patching an R regression script so its HTML outputs can be turned into a report.
 ---
 
 # Regression Reports Skill
 
 ## Purpose
-- 从用户选中的 R 回归代码自动生成 Word 文档
-- 如果代码缺少 HTML 输出逻辑，自动添加 `htmlreg()` 输出
-- 运行代码生成 HTML 文件
-- 解析 HTML 表格并应用变量名映射
-- 生成格式化的回归报告
+- 把 `htmlreg()` 导出的 regression HTML tables 转成格式统一的 `Word report`
+- 在需要时，先帮用户修改现有 `R` 脚本
+  - 补上缺失的 `htmlreg()` 输出
+  - 把 `models` 的列标题手动改成真正的 `DV label`
+- 再由用户手动运行 `R`
+- 最后由 Claude 读取生成好的 `HTML`，结合 `variable_mapping.md` 输出最终 `docx`
 
 ## When to Use
-- 用户选中 R 回归代码并要求生成报告
-- 用户要求输出回归表格到 Word
-- 用户提供回归代码并说"生成报告"
+- 用户要把 `R regression` 结果整理成 `Word report`
+- 用户要你检查或补 `htmlreg()` 输出逻辑
+- 用户已经有 `HTML regression tables`，要你直接生成 `docx`
 
-## Prerequisites
-执行前必须读取：
-- `Documents/Notes/variable_mapping.md`：变量名映射表
-- `Documents/Notes/regression_conventions.md`：回归分析项目级常识
+## Required reads
+- 执行前必须读取：
+  - `Documents/regression-reports/variable_mapping.md`
+  - `Documents/regression-reports/regression_conventions.md`
 
 ## Workflow
 
-### 1. 检查用户选中的代码
-- 识别 `models <- list()` 块
-- 识别 section title（`##############` 包围的注释）
-- 检查是否有 HTML 输出逻辑
+### 1. Clarify scope with the user
+- 先确认：
+  - 哪些 `section` 要进 report
+  - 每个 `section` 下有几个 `models <- list()` block
+  - 输出 `HTML` 文件名
+  - 最终 `docx` 文件名
+- 如果变量名、文件名、section title 不清楚，先和用户敲定再改代码。敲定之后，更新对应的 `Documents/regression-reports/variable_mapping.md` 文档。
 
-### 2. 补充 HTML 输出逻辑（如果缺失）
-如果代码只有 `screenreg()` 或 `print(screenreg())`，添加：
+### 2. Patch the R file
+- 只做两类最小修改：
+  - 为每个 `models <- list()` block 补 `htmlreg()` 输出（如果缺失）
+  - 把 `models[[...]]` 的列标题改成真正的 `DV label`
+- 目标：让 `HTML` 本身就携带正确的 `DV` 名字，而不是后处理时猜测
+- `DV label` 处理规则：
+  - 不要保留 `OLS: ...`、`Cox: ...`、`No Interaction` 这类 `model labels` 作为 `DV`
+  - 要手动把 `models[[...]]` 改成该列真正对应的因变量，例如：
+    - `Experience Binary`
+    - `Insight Binary`
+    - `Alternative Binary`
+    - `Answer 1–2 Similarity`
+    - `Human 1–2 Similarity`
+    - `Answer Count within 7 Days (log)`
+    - `Human Answer Hazard`
+- `HTML` 文件命名规则：
+  - 先和用户确认
+  - 默认遵守用户习惯：`meeting` 或 `explore` + `YYMMDD`/`260509` 这类六位日期 + descriptive suffix
+  - 不要擅自发明命名
+
+### 3. Required htmlreg style
+- 如果要补 `htmlreg()`，默认严格使用下面这种紧凑格式，只改 `file` 路径：
 ```r
-# Save to HTML
-htmlreg(models, 
-        file = "outputs/[section_name]_[sample_name].html",
-        stars = c(0.1, 0.05, 0.01, 0.001),
-        digits = 3,
-        include.fstatistic = TRUE,
-        include.adjrs = FALSE,
-        include.rsquared = FALSE,
-        robust = TRUE,
-        include.groups = FALSE,
-        single.row = FALSE,
-        omit.coef = omit_pattern
+htmlreg(models,
+  file = "Projects/.../outputs/meeting260505_example.html",
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
+          include.groups = FALSE, single.row = FALSE,
+          omit.coef = omit_pattern
 )
 ```
+- 一个 `models <- list()` block 对应一个 `htmlreg()` 输出
+- 不要把多个 block 误合并到一个 `HTML`
 
-### 3. 运行 R 代码
-- 执行修改后的代码
-- 生成 HTML 文件到 `outputs/` 目录
+### 4. User runs R manually
+- `HTML` 输出主要由用户自己手动 `run R` 完成
+- Claude 默认不负责主动运行 `R`，除非用户另行明确要求
 
-### 4. 解析 HTML 并生成 Word
-- 读取生成的 HTML 文件
-- 应用变量名映射
-- 生成 Word 文档
+### 5. Generate the report after HTML exists
+- 用户告诉你 `HTML` 已生成后：
+  - 读取实际存在的 `HTML files`
+  - 为本次任务临时写一个很小的 `Python runner`
+  - 这个 runner：
+    - 指定本次 `HTML` 列表
+    - 指定 `section title / sample / DV / IV`
+    - 调用 skill 内核心脚本
+  - 不要把这个 task-specific runner 永久保存在 skill 目录里
+  - 直接在背后执行，仅用于本次 report generation
 
-### 5. Word 文档格式
-- **表格样式**：黑白简洁样式，无彩色背景
-- **Section 结构**：
-  - 一个 section title 下可以有多个 table
-  - 同一 section 的多个 table 共享一个 title
-- **分页**：section 之间插入分页符
-- **表头**：
-  - 第一行：`DV: [变量名]`（跨列合并）
-  - 第二行：`(1)` `(2)` `(3)` ...
-- **数据行**：每个变量占两行（系数 + 标准误）
-- **统计量**：直接接在系数后，无空行
-- **Notes**：紧凑的 bullet points（Sample, DV, IV）
+## Core script responsibility
+- skill 目录里长期保留的核心执行文件只有：
+  - `generate_report_from_html.py`
+- 这个文件负责：
+  - 解析 `HTML regression table`
+  - 应用 `variable mapping`
+  - 生成 `Word table`
+  - 输出最终 `docx`
+- 每次具体项目的 `HTML file list / section config / output path`
+  - 由 Claude 针对当次任务临时生成 runner
+  - 不固化到 skill 目录
 
-## Section 识别规则
-从代码注释中识别 section：
-```r
-##############################################
-######## [Section Title]
-##############################################
-```
+## Word formatting rules
+- 表格样式：黑白简洁，不做多余美化
+- `section` 之间分页
+- 同一 `section` 下可有多个 tables，共享一个 `section title`
+- Notes 使用紧凑 bullet points：
+  - `Sample`
+  - `DV`
+  - `IV`
+- `DV` 显示规则：
+  - 优先使用已经在 `R models[[...]]` 中手动改好的真实 `DV label`
+  - 不要把 `model specification label` 当 `DV`
 
-同一 section 下的所有 `models <- list()` 块共享一个 section title。
+## Current design decisions
+- 保留 `generate_report_from_html.py`
+- 不在 skill 目录中保留 task-specific runner 模板文件
+- 不保留 `README.md`
+- 不保留 `example_usage.py`
+- `generate_report_from_html.py` 不应该再带一个绑定旧路径的 demo workflow
 
-## Sample 识别规则
-从 `data = ` 参数识别样本：
-- `mydata_answer` → "All human answers"
-- `mydata_answer_firstHumanAns` → "First human answer only"
-- 其他：从 `regression_conventions.md` 查找
-
-## Notes
-- 自动推断 DV 类型（从变量名判断 continuous/binary）
-- 自动提取 IV（treatment 及其交互项）
-- 输出文件名格式：`[section_name]_[sample_name].html`
-- 最终 Word 文档保存在 `outputs/regression_report.docx`
-
-## Files
-- `generate_report_from_html.py`：解析 HTML 并生成 Word
-- `run_and_generate_report.py`：完整 workflow（检查代码 → 运行 → 生成报告）
+## Things Claude should double-check
+- `HTML` 数量是否等于 `models <- list()` block 数量
+- `HTML` 文件名是否和用户确认过的 naming scheme 一致
+- `models[[...]]` 是否已经被手动改成真实 `DV`
+- `variable_mapping.md` 是否已覆盖新变量
+- 本次 runner 的输出路径是否就是用户指定的 `outputs/` folder
