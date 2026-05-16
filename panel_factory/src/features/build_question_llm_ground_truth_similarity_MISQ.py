@@ -12,9 +12,11 @@
 #   - Derived: gt_provider__*, gt_prompt_version__*, gt_model_name__*
 #
 # Logic:
-#   - 在 MISQ question universe 内，对固定三套模型预留 wide columns
+#   - 在 MISQ question universe 内，对固定四套模型预留 wide columns
 #   - 支持只运行单个模型；未运行的模型列保持为空
 #   - `claude_opus_4_7` 通过当前 custom API base 调用 OpenAI-compatible chat completions，并将结果缓存到各自模型目录
+#   - `gpt_5_5` 与 `gemini_pro_preview` 通过 OpenRouter 调用，并将结果缓存到各自模型目录
+#   - `deepseek_v4_pro` 通过 DeepSeek 官网 API 调用，并将结果缓存到独立模型目录
 #   - 将每个模型的 ground truth 与 AI answer 做 semantic similarity，输出单个 wide feature table
 
 import json
@@ -56,8 +58,16 @@ MODEL_SPECS = {
         "base_url": os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1").rstrip("/"),
         "cache_dir": ARTIFACT_PATHS["cache"]["question_ground_truth_gemini_pro_preview"],
     },
+    "deepseek_v4_pro": {
+        "provider": "deepseek_official",
+        "model_name": "deepseek-v4-pro",
+        "display_name": "DeepSeek V4 Pro",
+        "api_key": "sk-d73579f83a514c93a84010f757ccde47",
+        "base_url": "https://api.deepseek.com/v1",
+        "cache_dir": ARTIFACT_PATHS["cache"]["question_ground_truth_deepseek_v4_pro"],
+    },
 }
-MODEL_EXECUTION_ORDER = ["claude_opus_4_7", "gpt_5_5", "gemini_pro_preview"]
+MODEL_EXECUTION_ORDER = ["claude_opus_4_7", "gpt_5_5", "gemini_pro_preview", "deepseek_v4_pro"]
 MODEL_NAME_TO_SLUG = {spec["model_name"]: slug for slug, spec in MODEL_SPECS.items()}
 DEFAULT_MODEL_SLUG = "claude_opus_4_7"
 MODEL_SELECTOR = os.environ.get("QUESTION_GROUND_TRUTH_MODEL", DEFAULT_MODEL_SLUG).strip()
@@ -136,7 +146,22 @@ def _normalize_model_slug(model_selector: str) -> str:
 
 
 def _selected_model_slugs() -> list[str]:
-    return [_normalize_model_slug(MODEL_SELECTOR)]
+    selector = str(MODEL_SELECTOR).strip()
+    if not selector:
+        return [DEFAULT_MODEL_SLUG]
+
+    parts = [part.strip() for part in selector.split(",") if part.strip()]
+    if not parts:
+        return [DEFAULT_MODEL_SLUG]
+
+    selected_model_slugs = []
+    seen = set()
+    for part in parts:
+        model_slug = _normalize_model_slug(part)
+        if model_slug not in seen:
+            selected_model_slugs.append(model_slug)
+            seen.add(model_slug)
+    return selected_model_slugs
 
 
 def _build_cache_key(question_url: str, model_slug: str) -> str:
