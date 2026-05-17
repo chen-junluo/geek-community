@@ -350,6 +350,7 @@ def build() -> pd.DataFrame:
         })
         feature = feature.merge(gt_cols, on="questionURL", how="left")
 
+        gt_text_col = f"ground_truth_answer__{model_slug}"
         feature[f"gt_provider__{model_slug}"] = feature[f"gt_provider_tmp__{model_slug}"]
         feature[f"gt_error_reason__{model_slug}"] = feature[f"gt_error_reason_tmp__{model_slug}"]
         feature[f"gt_prompt_version__{model_slug}"] = feature[f"gt_prompt_version_tmp__{model_slug}"]
@@ -363,7 +364,6 @@ def build() -> pd.DataFrame:
 
         has_gt_col = f"has_ground_truth__{model_slug}"
         sim_col = f"AISimWithGT__{model_slug}"
-        gt_text_col = f"ground_truth_answer__{model_slug}"
 
         feature[has_gt_col] = (
             feature[gt_text_col].notna()
@@ -382,6 +382,8 @@ def build() -> pd.DataFrame:
                 lambda row: compute_similarity(row["ai_answer_text"], row[gt_text_col], similarity_model),
                 axis=1,
             )
+
+        feature = feature.drop(columns=[gt_text_col])
 
     output_cols = ["questionURL", "has_ai_answer"]
     for model_slug in MODEL_EXECUTION_ORDER:
