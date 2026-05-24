@@ -1,11 +1,27 @@
-# Artifact:  panel/answer_panel_MISQ
-# 输入:      data/features/human_answer_intermediate_MISQ.csv
-#            data/features/answer_accepted_answer_similarity_MISQ.csv
-# Grain:     human-answer-level (questionURL × resp_id)
-# Merge keys: questionURL, resp_id
-# 输出:      data/panels/answer_panel_MISQ.csv
+# Artifact:    panel/answer_panel_MISQ
+# Grain:       human_answer
+# Merge Keys:  questionURL, resp_id
 #
-# 职责：读取 MISQ human-answer intermediate，在 MISQ universe 内 late merge feature，输出 MISQ final panel。
+# Inputs:
+#   - human_answer_intermediate_MISQ.csv
+#   - human_answer_accepted_answer_similarity_MISQ.csv
+#   - human_answer_accepted_answer_anchor_flag_MISQ.csv
+#   - human_answer_llm_extension.csv
+#   - human_answer_llm_deviation.csv
+#   - human_answer_lexicon_based_answer_metrics.csv
+#   - human_answer_aigc_quality.csv
+#
+# Output:      data/panels/answer_panel_MISQ.csv
+#   - Index: questionURL, resp_id
+#   - Core: (all columns from human_answer_intermediate_MISQ + merged features)
+#   - Derived: —
+#
+# Logic:
+#   - 读取 MISQ human-answer intermediate
+#   - 在 MISQ universe 内 late merge answer-level features
+#   - 对 `cmnID`-grain feature 使用 `questionURL, cmnID` merge
+#   - 对 LLM metadata 列做 collision-safe rename，避免同名字段冲突
+#   - 输出 MISQ final panel
 
 import os
 import pandas as pd
@@ -23,7 +39,7 @@ def _late_merge_prefer_feature(
         if col not in merge_keys and col in panel.columns
     ]
     if overlap_cols:
-        panel = panel.drop(columns=overlap_cols)
+        feature = feature.drop(columns=overlap_cols)
     return panel.merge(feature, on=merge_keys, how="left")
 
 
@@ -43,6 +59,11 @@ def build() -> pd.DataFrame:
     ]
     accept_cols = [c for c in accept_cols if c in feat_accept_similarity.columns]
     feat_accept_similarity = feat_accept_similarity[accept_cols].copy()
+
+    feat_accept_anchor_flag = pd.read_csv(ARTIFACT_PATHS["features"]["human_answer_accepted_answer_anchor_flag_misq"])
+    anchor_flag_cols = ["questionURL", "resp_id", "is_accept_similarity_anchor"]
+    anchor_flag_cols = [c for c in anchor_flag_cols if c in feat_accept_anchor_flag.columns]
+    feat_accept_anchor_flag = feat_accept_anchor_flag[anchor_flag_cols].copy()
 
     feat_llm_extension = pd.read_csv(ARTIFACT_PATHS["features"]["answer_llm_extension"])
     llm_extension_cols = [
@@ -106,10 +127,14 @@ def build() -> pd.DataFrame:
     lexicon_cols = [c for c in lexicon_cols if c in feat_lexicon.columns]
     feat_lexicon = feat_lexicon[lexicon_cols].copy()
 
+    feat_human_aigc_quality = pd.read_csv(ARTIFACT_PATHS["features"]["human_answer_aigc_quality"])
+
     panel = _late_merge_prefer_feature(intermediate, feat_accept_similarity, ["questionURL", "resp_id"])
+    panel = _late_merge_prefer_feature(panel, feat_accept_anchor_flag, ["questionURL", "resp_id"])
     panel = _late_merge_prefer_feature(panel, feat_llm_extension, ["questionURL", "resp_id"])
     panel = _late_merge_prefer_feature(panel, feat_llm_deviation, ["questionURL", "resp_id"])
     panel = _late_merge_prefer_feature(panel, feat_lexicon, ["questionURL", "resp_id"])
+    panel = _late_merge_prefer_feature(panel, feat_human_aigc_quality, ["questionURL", "cmnID"])
     if "preAI" in panel.columns:
         panel["preAI"] = panel["preAI"].fillna(0).astype(int)
 
