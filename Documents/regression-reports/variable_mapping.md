@@ -23,3 +23,6 @@ log_textLengthCNAI_fillna → AI Length (log, fillNA)
 qualityAI_fillna → AI Quality (fillNA)
 AISimWithAccept_fillna → AI Sim w/ Accept (fillNA)
 AISimWithOpus47_fillna → AI Sim w/ Opus 4.7 (fillNA)
+AISimWithDeepseek_fillna → AI Sim w/ DeepSeek (fillNA)
+lexicon_personal_experience_binary → Lexicon Personal Experience
+lexicon_personal_experience → Lexicon Personal Experience

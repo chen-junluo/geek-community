@@ -8,82 +8,91 @@
 raw data (cmn_base, cmn_content, question_base)
   └─> question_intermediate (question)
         ├─> question_aggregation_from_answers (question)
-        ├─> question_content_metrics (question)
         │     └─> question_panel_MISQ (question)
-        ├─> question_intermediate_MISQ (question)
-        │     ├─> full_answer_intermediate_MISQ (full_answer)
-        │     │     ├─> human_answer_accepted_answer_similarity_MISQ (human_answer)
-        │     │     ├─> human_answer_lexicon_based_answer_metrics (human_answer)
-        │     │     ├─> human_answer_llm_deviation (human_answer)
-        │     │     ├─> human_answer_llm_extension (human_answer)
-        │     │     ├─> question_accepted_answer_similarity_MISQ (question)
-        │     │     ├─> question_ai_human_code_similarity (question)
-        │     │     │     ├─> question_panel (question)
-        │     │     ├─> question_ai_human_similarity (question)
-        │     │     ├─> question_content_jaccard_overlap (question)
-        │     │     ├─> question_human_pairwise_similarity (question)
-        │     │     └─> question_matching (question)
-        │     ├─> human_answer_intermediate_MISQ (human_answer)
-        │     │     ├─> answer_panel_MISQ (human_answer)
-        │     │     ├─> human_answer_aigc_quality (human_answer)
-        │     ├─> question_aigc_quality (question)
+        └─> question_intermediate_MISQ (question)
+              ├─> full_answer_intermediate_MISQ (full_answer)
+              │     ├─> human_answer_accepted_answer_similarity_MISQ (human_answer)
+              │     │     └─> answer_panel_MISQ (human_answer)
+              │     ├─> human_answer_lexicon_based_answer_metrics (human_answer)
+              │     ├─> human_answer_llm_deviation (human_answer)
+              │     ├─> human_answer_llm_extension (human_answer)
+              │     ├─> question_accepted_answer_similarity_MISQ (question)
+              │     ├─> question_ai_human_code_similarity (question)
+              │     ├─> question_ai_human_similarity (question)
+              │     ├─> question_content_jaccard_overlap (question)
+              │     ├─> question_human1_accepted_answer_similarity_MISQ (question)
+              │     ├─> question_human1_llm_ground_truth_similarity_MISQ (question)
+              │     ├─> question_human_pairwise_similarity (question)
+              │     └─> question_llm_ground_truth_similarity_MISQ (question)
+              ├─> human_answer_intermediate_MISQ (human_answer)
+              │     ├─> human_answer_accepted_answer_anchor_flag_MISQ (human_answer)
+              │     ├─> human_answer_aigc_quality (human_answer)
+              │     ├─> question_aigc_quality (question)
+              ├─> question_answer_timing_counts_MISQ (question)
   └─> question_intermediate_MISQ (question)
         ├─> full_answer_intermediate_MISQ (full_answer)
         │     ├─> human_answer_accepted_answer_similarity_MISQ (human_answer)
+        │     │     └─> answer_panel_MISQ (human_answer)
         │     ├─> human_answer_lexicon_based_answer_metrics (human_answer)
         │     ├─> human_answer_llm_deviation (human_answer)
         │     ├─> human_answer_llm_extension (human_answer)
         │     ├─> question_accepted_answer_similarity_MISQ (question)
-        │     │     └─> question_panel_MISQ (question)
         │     ├─> question_ai_human_code_similarity (question)
-        │     │     ├─> question_panel (question)
+        │     │     └─> question_panel_MISQ (question)
         │     ├─> question_ai_human_similarity (question)
         │     ├─> question_content_jaccard_overlap (question)
+        │     ├─> question_human1_accepted_answer_similarity_MISQ (question)
+        │     ├─> question_human1_llm_ground_truth_similarity_MISQ (question)
         │     ├─> question_human_pairwise_similarity (question)
-        │     └─> question_matching (question)
+        │     └─> question_llm_ground_truth_similarity_MISQ (question)
         ├─> human_answer_intermediate_MISQ (human_answer)
-        │     ├─> answer_panel_MISQ (human_answer)
+        │     ├─> human_answer_accepted_answer_anchor_flag_MISQ (human_answer)
         │     ├─> human_answer_aigc_quality (human_answer)
-        ├─> question_aigc_quality (question)
+        │     ├─> question_aigc_quality (question)
+        ├─> question_answer_timing_counts_MISQ (question)
 ```
 
 ### Human Answer Pipeline
 ```
 raw data (cmn_base, cmn_content)
   └─> human_answer_intermediate (human_answer)
-        ├─> answer_panel (human_answer)
         ├─> full_answer_intermediate (full_answer)
         │     └─> full_answer_intermediate_MISQ (full_answer)
         │           ├─> human_answer_accepted_answer_similarity_MISQ (human_answer)
+        │           │     └─> answer_panel_MISQ (human_answer)
         │           ├─> human_answer_lexicon_based_answer_metrics (human_answer)
         │           ├─> human_answer_llm_deviation (human_answer)
         │           ├─> human_answer_llm_extension (human_answer)
         │           ├─> question_accepted_answer_similarity_MISQ (question)
-        │           │     └─> question_panel_MISQ (question)
         │           ├─> question_ai_human_code_similarity (question)
-        │           │     ├─> question_panel (question)
+        │           │     └─> question_panel_MISQ (question)
         │           ├─> question_ai_human_similarity (question)
         │           ├─> question_content_jaccard_overlap (question)
+        │           ├─> question_human1_accepted_answer_similarity_MISQ (question)
+        │           ├─> question_human1_llm_ground_truth_similarity_MISQ (question)
         │           ├─> question_human_pairwise_similarity (question)
-        │           └─> question_matching (question)
+        │           └─> question_llm_ground_truth_similarity_MISQ (question)
         ├─> human_answer_content_metrics (human_answer)
         │     └─> question_aggregation_from_answers (question)
         ├─> human_answer_intermediate_MISQ (human_answer)
-        │     ├─> answer_panel_MISQ (human_answer)
+        │     ├─> human_answer_accepted_answer_anchor_flag_MISQ (human_answer)
         │     ├─> human_answer_aigc_quality (human_answer)
+        │     ├─> question_aigc_quality (question)
   └─> human_answer_intermediate_MISQ (human_answer)
         ├─> answer_panel_MISQ (human_answer)
+        ├─> human_answer_accepted_answer_anchor_flag_MISQ (human_answer)
         ├─> human_answer_accepted_answer_similarity_MISQ (human_answer)
         ├─> human_answer_aigc_quality (human_answer)
         ├─> human_answer_lexicon_based_answer_metrics (human_answer)
         ├─> human_answer_llm_deviation (human_answer)
         ├─> human_answer_llm_extension (human_answer)
         ├─> question_accepted_answer_similarity_MISQ (question)
-        │     └─> question_panel_MISQ (question)
         ├─> question_ai_human_code_similarity (question)
-        │     ├─> question_panel (question)
+        │     └─> question_panel_MISQ (question)
         ├─> question_ai_human_similarity (question)
+        ├─> question_aigc_quality (question)
         ├─> question_content_jaccard_overlap (question)
+        ├─> question_human1_accepted_answer_similarity_MISQ (question)
         └─> question_human_pairwise_similarity (question)
 ```
 
@@ -93,30 +102,34 @@ raw data (question_ai_content) + human_answer_intermediate
   └─> full_answer_intermediate (full_answer)
         └─> full_answer_intermediate_MISQ (full_answer)
               ├─> human_answer_accepted_answer_similarity_MISQ (human_answer)
+              │     └─> answer_panel_MISQ (human_answer)
               ├─> human_answer_lexicon_based_answer_metrics (human_answer)
               ├─> human_answer_llm_deviation (human_answer)
               ├─> human_answer_llm_extension (human_answer)
               ├─> question_accepted_answer_similarity_MISQ (question)
-              │     └─> question_panel_MISQ (question)
               ├─> question_ai_human_code_similarity (question)
-              │     ├─> question_panel (question)
+              │     └─> question_panel_MISQ (question)
               ├─> question_ai_human_similarity (question)
               ├─> question_content_jaccard_overlap (question)
+              ├─> question_human1_accepted_answer_similarity_MISQ (question)
+              ├─> question_human1_llm_ground_truth_similarity_MISQ (question)
               ├─> question_human_pairwise_similarity (question)
-              └─> question_matching (question)
+              └─> question_llm_ground_truth_similarity_MISQ (question)
   └─> full_answer_intermediate_MISQ (full_answer)
         ├─> human_answer_accepted_answer_similarity_MISQ (human_answer)
+        │     └─> answer_panel_MISQ (human_answer)
         ├─> human_answer_lexicon_based_answer_metrics (human_answer)
         ├─> human_answer_llm_deviation (human_answer)
         ├─> human_answer_llm_extension (human_answer)
         ├─> question_accepted_answer_similarity_MISQ (question)
-        │     └─> question_panel_MISQ (question)
         ├─> question_ai_human_code_similarity (question)
-        │     ├─> question_panel (question)
+        │     └─> question_panel_MISQ (question)
         ├─> question_ai_human_similarity (question)
         ├─> question_content_jaccard_overlap (question)
+        ├─> question_human1_accepted_answer_similarity_MISQ (question)
+        ├─> question_human1_llm_ground_truth_similarity_MISQ (question)
         ├─> question_human_pairwise_similarity (question)
-        └─> question_matching (question)
+        └─> question_llm_ground_truth_similarity_MISQ (question)
 ```
 
 ### User Activity Pipeline
@@ -137,26 +150,28 @@ raw data (cmn_base, votes_content, object_id)
 | `human_answer_intermediate_MISQ` | `intermediate` | `human_answer` | `questionURL, resp_id` | `human_answer_intermediate.csv`, `question_intermediate_MISQ.csv` | `build_human_answer_intermediate_MISQ.py` | `data/features/human_answer_intermediate_MISQ.csv` |  |
 | `question_intermediate` | `intermediate` | `question` | `questionURL` | `cmn_base.csv`, `cmn_content.csv`, `question_base.csv` | `build_question_intermediate.py` | `data/features/question_intermediate.csv` |  |
 | `question_intermediate_MISQ` | `intermediate` | `question` | `questionURL` | `question_intermediate.csv` | `build_question_intermediate_MISQ.py` | `data/features/question_intermediate_MISQ.csv` |  |
+| `human_answer_accepted_answer_anchor_flag_MISQ` | `feature` | `human_answer` | `questionURL, resp_id` | `human_answer_intermediate_MISQ.csv` | `build_human_answer_accepted_answer_anchor_flag_MISQ.py` | `data/features/human_answer_accepted_answer_anchor_flag_MISQ.csv` |  |
 | `human_answer_accepted_answer_similarity_MISQ` | `feature` | `human_answer` | `questionURL, resp_id` | `human_answer_intermediate_MISQ.csv`, `full_answer_intermediate_MISQ.csv` | `build_human_answer_accepted_answer_similarity_MISQ.py` | `data/features/human_answer_accepted_answer_similarity_MISQ.csv` |  |
-| `human_answer_aigc_quality` | `feature` | `human_answer` | `questionURL, cmnID` | `human_answer_intermediate_MISQ.csv`, `Archive/cmn2question_AIGC.csv`, `Archive/cmn2question_AIGC_component.csv`, `Archive/cmn2question_AIGC_component_old.csv`, `Archive/cmn2question_AIGC_comprehensive.csv` | `build_human_answer_aigc_quality.py` | `data/features/human_answer_aigc_quality.csv` |  |
+| `human_answer_aigc_quality` | `feature` | `human_answer` | `questionURL, cmnID` | `human_answer_intermediate_MISQ.csv`, `question_ai_content.csv`, `data/.cache/AIGC_quality_index_comprehensive/*.json`, `data/.cache/AIGC_quality_index_component_old/*.json`, `data/.cache/AIGC_quality_index_component/*.json`, `data/.cache/cmn2question_AIGC_sample_annotated.csv` | `build_human_answer_aigc_quality.py` | `data/features/human_answer_aigc_quality.csv` |  |
 | `human_answer_content_metrics` | `feature` | `human_answer` | `questionURL, cmnID` | `human_answer_intermediate.csv`, `cmn_content.csv` | `build_human_answer_content_metrics.py` | `data/features/human_answer_content_metrics.csv` |  |
 | `human_answer_lexicon_based_answer_metrics` | `feature` | `human_answer` | `questionURL, resp_id` | `human_answer_intermediate_MISQ.csv`, `full_answer_intermediate_MISQ.csv` | `build_human_answer_lexicon_based_answer_metrics.py` | `data/features/human_answer_lexicon_based_answer_metrics.csv` |  |
 | `human_answer_llm_deviation` | `feature` | `human_answer` | `questionURL, resp_id` | `question_intermediate_MISQ.csv`, `human_answer_intermediate_MISQ.csv`, `full_answer_intermediate_MISQ.csv` | `build_human_answer_llm_deviation.py` | `data/features/human_answer_llm_deviation.csv` |  |
 | `human_answer_llm_extension` | `feature` | `human_answer` | `questionURL, resp_id` | `question_intermediate_MISQ.csv`, `human_answer_intermediate_MISQ.csv`, `full_answer_intermediate_MISQ.csv` | `build_human_answer_llm_extension.py` | `data/features/human_answer_llm_extension.csv` |  |
 | `question_accepted_answer_similarity_MISQ` | `feature` | `question` | `questionURL` | `human_answer_intermediate_MISQ.csv`, `full_answer_intermediate_MISQ.csv` | `build_question_accepted_answer_similarity_MISQ.py` | `data/features/question_accepted_answer_similarity_MISQ.csv` |  |
-| `question_aggregation_from_answers` | `feature` | `question` | `questionURL` | `question_intermediate.csv`, `human_answer_intermediate.csv`, `human_answer_content_metrics.csv`, `user_activity_experience.csv` | `build_question_aggregation_from_answers.py` | `data/features/question_aggregation_from_answers.csv` |  |
+| `question_aggregation_from_answers` | `feature` | `question` | `questionURL` | `question_intermediate.csv`, `human_answer_intermediate.csv`, `human_answer_content_metrics.csv`, `question_content_metrics.csv`, `user_activity_experience.csv` | `build_question_aggregation_from_answers.py` | `data/features/question_aggregation_from_answers.csv` |  |
 | `question_ai_human_code_similarity` | `feature` | `question` | `questionURL` | `question_intermediate_MISQ.csv`, `human_answer_intermediate_MISQ.csv`, `full_answer_intermediate_MISQ.csv` | `build_question_ai_human_code_similarity.py` | `data/features/question_ai_human_code_similarity.csv` |  |
 | `question_ai_human_similarity` | `feature` | `question` | `questionURL` | `question_intermediate_MISQ.csv`, `human_answer_intermediate_MISQ.csv`, `full_answer_intermediate_MISQ.csv` | `build_question_ai_human_similarity.py` | `data/features/question_ai_human_similarity.csv` |  |
-| `question_aigc_quality` | `feature` | `question` | `questionURL` | `question_intermediate_MISQ.csv`, `Archive/cmn2question_AIGC.csv` | `build_question_aigc_quality.py` | `data/features/question_aigc_quality.csv` |  |
+| `question_aigc_quality` | `feature` | `question` | `questionURL` | `question_intermediate_MISQ.csv`, `human_answer_intermediate_MISQ.csv`, `question_ai_content.csv`, `data/.cache/AIGC_quality_index_comprehensive/*.json`, `data/.cache/AIGC_quality_index_component_old/*.json`, `data/.cache/AIGC_quality_index_component/*.json`, `data/.cache/cmn2question_AIGC_sample_annotated.csv` | `build_question_aigc_quality.py` | `data/features/question_aigc_quality.csv` |  |
+| `question_answer_timing_counts_MISQ` | `feature` | `question` | `questionURL` | `question_intermediate_MISQ.csv`, `cmn_base.csv` | `build_question_answer_timing_counts_MISQ.py` | `data/features/question_answer_timing_counts_MISQ.csv` |  |
 | `question_content_jaccard_overlap` | `feature` | `question` | `questionURL` | `question_intermediate_MISQ.csv`, `human_answer_intermediate_MISQ.csv`, `full_answer_intermediate_MISQ.csv` | `build_question_content_jaccard_overlap.py` | `data/features/question_content_jaccard_overlap.csv` |  |
-| `question_content_metrics` | `feature` | `question` | `questionURL` | `question_intermediate.csv`, `question_ai_content.csv` | `build_question_content_metrics.py` | `data/features/question_content_metrics.csv` |  |
+| `question_content_metrics` | `feature` | `question` | `questionURL` | `cmn_content.csv`, `question_ai_content.csv` | `build_question_content_metrics.py` | `data/features/question_content_metrics.csv` |  |
+| `question_human1_accepted_answer_similarity_MISQ` | `feature` | `question` | `questionURL` | `question_intermediate_MISQ.csv`, `human_answer_intermediate_MISQ.csv`, `full_answer_intermediate_MISQ.csv` | `build_question_human1_accepted_answer_similarity_MISQ.py` | `data/features/question_human1_accepted_answer_similarity_MISQ.csv` |  |
+| `question_human1_llm_ground_truth_similarity_MISQ` | `feature` | `question` | `questionURL` | `question_intermediate_MISQ.csv`, `full_answer_intermediate_MISQ.csv` | `build_question_human1_llm_ground_truth_similarity_MISQ.py` | `data/features/question_human1_llm_ground_truth_similarity_MISQ.csv` |  |
 | `question_human_pairwise_similarity` | `feature` | `question` | `questionURL` | `question_intermediate_MISQ.csv`, `human_answer_intermediate_MISQ.csv`, `full_answer_intermediate_MISQ.csv` | `build_question_human_pairwise_similarity.py` | `data/features/question_human_pairwise_similarity.csv` |  |
-| `question_matching` | `feature` | `question` | `questionURL` | `question_intermediate_MISQ.csv`, `full_answer_intermediate_MISQ.csv` | `build_question_matching.py` | `data/features/question_matching.csv` |  |
+| `question_llm_ground_truth_similarity_MISQ` | `feature` | `question` | `questionURL` | `question_intermediate_MISQ.csv`, `full_answer_intermediate_MISQ.csv` | `build_question_llm_ground_truth_similarity_MISQ.py` | `data/features/question_llm_ground_truth_similarity_MISQ.csv` |  |
 | `user_activity_experience` | `feature` | `user_activity` | `userURL, date` | `all_activities.csv` | `build_user_activity_experience.py` | `data/features/user_activity_experience.csv` |  |
-| `answer_panel` | `panel` | `human_answer` | `questionURL, resp_id` | `human_answer_intermediate.csv`, `answer_llm_deviation.csv`, `answer_accepted_answer_similarity.csv` | `build_answer_panel.py` | `data/panels/answer_panel.csv` |  |
-| `answer_panel_MISQ` | `panel` | `human_answer` | `questionURL, resp_id` | `human_answer_intermediate_MISQ.csv`, `answer_accepted_answer_similarity_MISQ.csv` | `build_answer_panel_MISQ.py` | `data/panels/answer_panel_MISQ.csv` |  |
-| `question_panel` | `panel` | `question` | `questionURL` | `question_intermediate.csv`, `question_ai_human_code_similarity.csv`, `question_human_pairwise_similarity.csv`, `question_content_jaccard_overlap.csv`, `question_accepted_answer_similarity.csv` | `build_question_panel.py` | `data/panels/question_panel.csv` |  |
-| `question_panel_MISQ` | `panel` | `question` | `questionURL` | `question_intermediate_MISQ.csv`, `question_content_metrics.csv`, `question_matching.csv`, `question_aigc_quality.csv`, `question_ai_human_similarity.csv`, `question_ai_human_code_similarity.csv`, `question_content_jaccard_overlap.csv`, `question_human_pairwise_similarity.csv`, `question_accepted_answer_similarity_MISQ.csv` | `build_question_panel_MISQ.py` | `data/panels/question_panel_MISQ.csv` |  |
+| `answer_panel_MISQ` | `panel` | `human_answer` | `questionURL, resp_id` | `human_answer_intermediate_MISQ.csv`, `human_answer_accepted_answer_similarity_MISQ.csv`, `human_answer_accepted_answer_anchor_flag_MISQ.csv`, `human_answer_llm_extension.csv`, `human_answer_llm_deviation.csv`, `human_answer_lexicon_based_answer_metrics.csv`, `human_answer_aigc_quality.csv` | `build_answer_panel_MISQ.py` | `data/panels/answer_panel_MISQ.csv` |  |
+| `question_panel_MISQ` | `panel` | `question` | `questionURL` | `question_intermediate_MISQ.csv`, `question_content_metrics.csv`, `question_aigc_quality.csv`, `question_ai_human_similarity.csv`, `question_ai_human_code_similarity.csv`, `question_content_jaccard_overlap.csv`, `question_human_pairwise_similarity.csv`, `question_human1_accepted_answer_similarity_MISQ.csv`, `question_llm_ground_truth_similarity_MISQ.csv`, `question_human1_llm_ground_truth_similarity_MISQ.csv`, `question_aggregation_from_answers.csv`, `user_activity_experience.csv` | `build_question_panel_MISQ.py` | `data/panels/question_panel_MISQ.csv` |  |
 ---
 ## Key Patterns
 ### Grain Hierarchy
