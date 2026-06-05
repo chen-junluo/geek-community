@@ -9,9 +9,10 @@ from collections import defaultdict
 
 # 配置路径
 SCRIPT_DIR = Path(__file__).parent
-SRC_FEATURES_DIR = SCRIPT_DIR.parent / "src" / "features"
-SRC_PANELS_DIR = SCRIPT_DIR.parent / "src" / "panels"
-OUTPUT_DOC = SCRIPT_DIR.parent / "documents" / "pipeline_dependency_table.md"
+PANEL_FACTORY_DIR = SCRIPT_DIR.parent / "panel_factory"
+SRC_FEATURES_DIR = PANEL_FACTORY_DIR / "src" / "features"
+SRC_PANELS_DIR = PANEL_FACTORY_DIR / "src" / "panels"
+OUTPUT_DOC = PANEL_FACTORY_DIR / "documents" / "pipeline_dependency_table.md"
 
 # 正则匹配模式
 ARTIFACT_PATTERN = r"# Artifact:\s+(\w+)/(\S+)"
