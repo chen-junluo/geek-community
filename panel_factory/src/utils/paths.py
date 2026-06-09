@@ -30,8 +30,6 @@ ARTIFACT_PATHS = {
         "question_content_metrics": os.path.join(_BASE, "features", "question_content_metrics.csv"),
         # human answer-level content metrics (NEW)
         "human_answer_content_metrics": os.path.join(_BASE, "features", "human_answer_content_metrics.csv"),
-        # question-level matching (NEW)
-        "question_matching": os.path.join(_BASE, "features", "question_matching.csv"),
         # question-level AIGC quality (NEW)
         "question_aigc_quality": os.path.join(_BASE, "features", "question_aigc_quality.csv"),
         # user activity-level experience (NEW)
@@ -44,15 +42,20 @@ ARTIFACT_PATHS = {
         "human_answer_llm_extension": os.path.join(_BASE, "features", "human_answer_llm_extension.csv"),
         "human_answer_llm_deviation": os.path.join(_BASE, "features", "human_answer_llm_deviation.csv"),
         "human_answer_accepted_answer_similarity_misq": os.path.join(_BASE, "features", "human_answer_accepted_answer_similarity_MISQ.csv"),
+        "human_answer_accepted_answer_anchor_flag_misq": os.path.join(_BASE, "features", "human_answer_accepted_answer_anchor_flag_MISQ.csv"),
         "human_answer_lexicon_based_answer_metrics": os.path.join(_BASE, "features", "human_answer_lexicon_based_answer_metrics.csv"),
         # question-level similarity features
         "question_ai_human_similarity": os.path.join(_BASE, "features", "question_ai_human_similarity.csv"),
         "question_ai_human_code_similarity": os.path.join(_BASE, "features", "question_ai_human_code_similarity.csv"),
         "question_content_jaccard_overlap": os.path.join(_BASE, "features", "question_content_jaccard_overlap.csv"),
         "question_accepted_answer_similarity_misq": os.path.join(_BASE, "features", "question_accepted_answer_similarity_MISQ.csv"),
+        "question_human1_accepted_answer_similarity_misq": os.path.join(_BASE, "features", "question_human1_accepted_answer_similarity_MISQ.csv"),
         "question_llm_ground_truth_similarity_misq": os.path.join(_BASE, "features", "question_llm_ground_truth_similarity_MISQ.csv"),
+        "question_human1_llm_ground_truth_similarity_misq": os.path.join(_BASE, "features", "question_human1_llm_ground_truth_similarity_MISQ.csv"),
         # question-level human pairwise similarity（treatment: all humans; control: drop first human）
         "question_human_pairwise_similarity": os.path.join(_BASE, "features", "question_human_pairwise_similarity.csv"),
+        # question-level answer timing counts from MISQ raw thread chronology
+        "question_answer_timing_counts_misq": os.path.join(_BASE, "features", "question_answer_timing_counts_MISQ.csv"),
 
     # Deprecated aliases (for backward compatibility)
         "answer_llm_extension": os.path.join(_BASE, "features", "human_answer_llm_extension.csv"),
@@ -77,5 +80,6 @@ ARTIFACT_PATHS = {
         "question_ground_truth_claude_opus_4_7": os.path.join(_BASE, ".cache", "question_ground_truth_claude_opus_4_7"),
         "question_ground_truth_gpt_5_5": os.path.join(_BASE, ".cache", "question_ground_truth_gpt_5_5"),
         "question_ground_truth_gemini_pro_preview": os.path.join(_BASE, ".cache", "question_ground_truth_gemini_pro_preview"),
+        "question_ground_truth_deepseek_v4_pro": os.path.join(_BASE, ".cache", "question_ground_truth_deepseek_v4_pro"),
     },
 }

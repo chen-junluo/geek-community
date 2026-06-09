@@ -1,129 +1,99 @@
-# Artifact:  intermediate/human_answer
-# 输入:      data/raw/cmn_base.csv, data/raw/cmn_content.csv, question_intermediate.csv
-# Grain:     human-answer-level (questionURL × resp_id)
-# Merge keys: questionURL, resp_id (或 questionURL, cmnID)
-# 输出:      data/features/human_answer_intermediate.csv
+# Artifact:    intermediate/human_answer_intermediate
+# Grain:       human_answer
+# Merge Keys:  questionURL, resp_id
 #
-# 逻辑：标准化 human-answer universe。`cmnID == 0` 不算 answer，
-#       `resp_id` 只给 human answers，且必须按 chronological order 构造。
+# Inputs:
+#   - cmn_base.csv (cmnID>0, answer==1)  # raw human answer metadata
+#   - cmn_content.csv  # raw human answer text
 #
-# 补充列（相比旧版）：
-#   - accumRep, accumGold, accumSilver, accumCopper (user badges)
-#   - content_code_text, content_CN_text (text extracts)
-#   - 确保 resp_id 按 (date, cmnID) chronological order
+# Output:      data/features/human_answer_intermediate.csv
+#   - Index: questionURL, resp_id
+#   - Core: cmnID, date, userURL, accepted, netlikeNum, dateID, human_answer_text, content_code_text, content_CN_text
+#   - Derived: —
+#
+# Logic:
+#   - 筛选 cmnID>0 且 answer==1 的 human answers
+#   - 按 questionURL, date, cmnID 排序
+#   - 生成 resp_id: 每个 question 内从 1 开始递增
+#   - 提取 human_answer_text, content_code_text, content_CN_text
+#   - 使用 netlikeNum
 
 import os
-
 import pandas as pd
 import numpy as np
 
 from utils.paths import ARTIFACT_PATHS
-
 
 OUTPUT_CSV = ARTIFACT_PATHS["intermediate"]["human_answer"]
 os.makedirs(os.path.dirname(OUTPUT_CSV), exist_ok=True)
 
 
 def build(raw_dir: str = ARTIFACT_PATHS["raw"]) -> pd.DataFrame:
+    # 读取 raw data
     cmn_base = pd.read_csv(os.path.join(raw_dir, "cmn_base.csv"))
     cmn_content = pd.read_csv(os.path.join(raw_dir, "cmn_content.csv"))
-    question = pd.read_csv(ARTIFACT_PATHS["intermediate"]["question"])
 
+    # 转换 date 为 datetime
     cmn_base["date"] = pd.to_datetime(cmn_base["date"], errors="coerce")
 
-    # Filter to answers only (cmnID != 0)
-    answer_base = cmn_base[cmn_base["cmnID"] != 0].copy()
+    # 筛选：cmnID > 0 且 answer == 1
+    human_answers = cmn_base[
+        (cmn_base["cmnID"] > 0) &
+     (cmn_base["answer"] == 1)
+    ].copy()
 
-    # Merge question preAI
-    answer_base = answer_base.merge(
-        question[["questionURL", "preAI"]],
-        on="questionURL",
-        how="inner",
-        suffixes=("", "_question")
-    )
-
-    # Merge answer text content
-    answer_base = answer_base.merge(
-        cmn_content[["questionURL", "cmnID", "content_full_text", "content_code_text", "content_CN_text"]],
-        on=["questionURL", "cmnID"],
-        how="left",
-    )
-
-    # Ensure no old resp_id column exists
-    if "resp_id" in answer_base.columns:
-        answer_base = answer_base.drop(columns=["resp_id"])
-
-    # Sort by questionURL, then date, then cmnID (chronological order)
-    answer_base = answer_base.sort_values(
+    # 按 questionURL, date, cmnID 排序（chronological order）
+    human_answers = human_answers.sort_values(
         ["questionURL", "date", "cmnID"],
-        na_position="last",
+        na_position="last"
     ).reset_index(drop=True)
 
-    # Generate resp_id (within-question chronological index: 1, 2, 3...)
-    answer_base["resp_id"] = answer_base.groupby("questionURL").cumcount() + 1
+    # 生成 resp_id：在每个 questionURL 内从 1 开始递增
+    human_answers["resp_id"] = human_answers.groupby("questionURL").cumcount() + 1
 
-    # Standardize column names
-    answer_base["is_accepted_answer"] = answer_base["accept"].fillna(0).astype(int)
-    answer_base["human_answer_text"] = answer_base["content_full_text"]
-    answer_base["dateID"] = answer_base["resp_id"]  # dateID = resp_id for compatibility
+    # 生成 dateID = resp_id
+    human_answers["dateID"] = human_answers["resp_id"]
 
-    # Drop raw fields that have been standardized
-    answer_base = answer_base.drop(columns=["accept"], errors="ignore")
+    # Merge cmn_content 提取 text fields
+    human_answers = human_answers.merge(
+        cmn_content[["questionURL", "cmnID", "content_full_text", "content_code_text", "content_CN_text"]],
+        on=["questionURL", "cmnID"],
+        how="left"
+    )
 
-    # Select and order columns
-    # Core columns
-    core_cols = ["questionURL", "resp_id", "cmnID", "dateID", "date"]
+    # 标准化列名
+    human_answers["human_answer_text"] = human_answers["content_full_text"]
+    human_answers["is_accepted_answer"] = human_answers["accept"].fillna(0).astype(int)
 
-    # Answer metadata
-    answer_cols = ["is_accepted_answer", "answer", "hiddenanswer"]
+    # 选择输出列（按要求的顺序）
+    output_cols = [
+        # Index
+        "resp_id", "dateID", "questionURL", "cmnID",
+        # Metadata
+        "date", "userURL", "userName",
+        # Text
+      "human_answer_text", "content_code_text", "content_CN_text",
+        # Acceptance
+        "is_accepted_answer", "netlikeNum",
+        # User badges
+        "accumRep", "accumGold", "accumSilver", "accumCopper"
+    ]
 
-    # Text content
-    text_cols = ["human_answer_text", "content_code_text", "content_CN_text"]
+    human_answer_intermediate = human_answers[output_cols]
 
-    # User info
-    user_cols = ["userURL", "userName", "accumRep", "accumGold", "accumSilver", "accumCopper"]
+    # 保存
+    human_answer_intermediate.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")
 
-    # Formatting
-    formatting_cols = ["imgNum", "brNum", "codeNum", "inlinecodeNum", "interlinecodeNum", "hrefNum"]
+    # 报告统计
+    print(f"✓ human_answer_intermediate 已保存: {OUTPUT_CSV}")
+    print(f"  - Shape: {human_answer_intermediate.shape}")
+    print(f"  - resp_id range: {human_answer_intermediate['resp_id'].min()} to {human_answer_intermediate['resp_id'].max()}")
+    print(f"  - Unique questions: {human_answer_intermediate['questionURL'].nunique()}")
+    print(f"  - Date range: {human_answer_intermediate['date'].min()} to {human_answer_intermediate['date'].max()}")
+    print(f"  - Accepted answers: {human_answer_intermediate['is_accepted_answer'].sum()}")
+    print(f"  - netlikeNum stats: min={human_answer_intermediate['netlikeNum'].min()}, max={human_answer_intermediate['netlikeNum'].max()}, mean={human_answer_intermediate['netlikeNum'].mean():.2f}")
 
-    # Other
-    other_cols = ["preAI", "location", "secdate", "seclocation", "netlikeNum"]
-
-    # Build ordered column list
-    ordered_cols = core_cols + answer_cols + text_cols + user_cols + formatting_cols + other_cols
-
-    # Add any remaining columns
-    remaining_cols = [col for col in answer_base.columns if col not in ordered_cols]
-    human_answer = answer_base[ordered_cols + remaining_cols]
-
-    # Validation: check chronological order
-    _validate_chronological_order(human_answer)
-
-    human_answer.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")
-    print(f"human_answer_intermediate 已保存: {OUTPUT_CSV}  shape={human_answer.shape}")
-    print(f"  - resp_id range: {human_answer['resp_id'].min()} to {human_answer['resp_id'].max()}")
-    print(f"  - date range: {human_answer['date'].min()} to {human_answer['date'].max()}")
-    print(f"  - accepted answers: {human_answer['is_accepted_answer'].sum()}")
-    return human_answer
-
-
-def _validate_chronological_order(df):
-    """Validate that resp_id follows chronological order within each question."""
-    violations = []
-
-    for questionURL, group in df.groupby("questionURL"):
-        group = group.sort_values("resp_id")
-
-        # Check if dates are monotonically increasing
-        dates = pd.to_datetime(group["date"])
-        if not dates.is_monotonic_increasing:
-            violations.append(questionURL)
-
-    if violations:
-        print(f"  ⚠ Warning: {len(violations)} questions have non-chronological resp_id")
-        print(f"    Sample violations: {violations[:5]}")
-    else:
-        print(f"  ✓ Chronological order validated")
+    return human_answer_intermediate
 
 
 if __name__ == "__main__":

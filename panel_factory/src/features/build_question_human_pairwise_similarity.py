@@ -1,13 +1,21 @@
-# Artifact:  feature/question_human_pairwise_similarity
-# 输入:      data/features/question_intermediate_MISQ.csv, data/features/human_answer_intermediate_MISQ.csv,
-#            data/features/full_answer_intermediate_MISQ.csv
-# Grain:     question-level (questionURL)
-# Merge keys: questionURL
-# 输出:      data/features/question_human_pairwise_similarity.csv
+# Artifact:    feature/question_human_pairwise_similarity
+# Grain:       question
+# Merge Keys:  questionURL
 #
-# 逻辑：在 MISQ universe 内：
-#   - 有 AI answer 时：对该 question 下所有 human answers 做 pairwise cosine similarity，取 mean。
-#   - 无 AI answer 时：删掉第一个 human answer，对剩余 human answers 做 pairwise similarity mean。
+# Inputs:
+#   - question_intermediate_MISQ.csv
+#   - human_answer_intermediate_MISQ.csv
+#   - full_answer_intermediate_MISQ.csv
+#
+# Output:      data/features/question_human_pairwise_similarity.csv
+#   - Index: questionURL
+#   - Core: human_pairwise_similarity_mean
+#   - Derived: —
+#
+# Logic:
+#   - 在 MISQ universe 内
+#   - 有 AI answer 时：对该 question 下所有 human answers 做 pairwise cosine similarity，取 mean
+#   - 无 AI answer 时：删掉第一个 human answer，对剩余 human answers 做 pairwise similarity mean
 #   - 可用 human answers < 2 → `human_pairwise_similarity_mean = np.nan`
 
 import os

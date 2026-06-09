@@ -1,3 +1,23 @@
+# Artifact:    feature/question_content_metrics
+# Grain:       question
+# Merge Keys:  questionURL
+#
+# Inputs:
+#   - cmn_content.csv
+#   - question_ai_content.csv
+#
+# Output:      data/features/question_content_metrics.csv
+#   - Index: questionURL
+#   - Core: question_* content metrics, question_preAI_* content metrics
+#   - Derived: question_goodAI
+#
+# Logic:
+#   - 从 `cmn_content.csv` 读取 `cmnID == 0` 的 question rows
+#   - 从 `question_ai_content.csv` 读取 AI answer content
+#   - 对 question side 复用 `process_cmn_content_metrics()`
+#   - 对 AI side 复用 `process_question_content_metrics()`
+#   - 输出不重复携带 `title`、`preAI` 等 canonical intermediate columns
+
 import os
 import pandas as pd
 import numpy as np

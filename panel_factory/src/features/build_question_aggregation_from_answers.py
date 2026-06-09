@@ -11,7 +11,7 @@
 #
 # Output:      data/features/question_aggregation_from_answers.csv
 #   - Index: questionURL
-#   - Core: wait1Resp_original, wait2Resp_original, wait3Resp_original, waitAccepted_original, waitAvgAllResp_original, askTime_original, askTime, hourofday, dayofweek, monthofyear, isHoliday, isLieu, codeLength_1Resp, textLengthCN_1Resp, acceptedBefore_sumResp, answer_que_within7day, log_answer_que_within7day, deltaPostLastansAvg, deltawaitMedian
+#   - Core: wait1Resp_original, wait2Resp_original, wait3Resp_original, waitAccepted_original, waitAvgAllResp_original, askTime_original, askTime, hourofday, dayofweek, monthofyear, isHoliday, isLieu, hiddenanswer_que, answer_que, accepted_que, views_que, focusNum_que, collectNum_que, codeLength_1Resp, textLengthCN_1Resp, acceptedBefore_sumResp, answer_que_within7day, log_answer_que_within7day, deltaPostLastansAvg, deltawaitMedian
 #   - Derived: good1Resp, good2Resp, bestgt1Resp, bestallResp, like-threshold counts, markdown-threshold counts, acceptedBefore-stratified counts and netlike summaries, tag-window context
 #
 # Logic:
@@ -254,24 +254,24 @@ def _require_columns(df: pd.DataFrame, required_columns: list[str], table_name: 
 
 def _rename_content_metrics(content: pd.DataFrame) -> pd.DataFrame:
     rename_map = {
-        "human_answer_textLength": "textLength",
-        "human_answer_textLengthCN": "textLengthCN",
-        "human_answer_codeLength": "codeLength",
-        "human_answer_imgNum": "imgNum",
-        "human_answer_brNum": "brNum",
-        "human_answer_codeNum": "codeNum",
-        "human_answer_inlinecodeNum": "inlinecodeNum",
-        "human_answer_interlinecodeNum": "interlinecodeNum",
-        "human_answer_hrefNum": "hrefNum",
-        "human_answer_aNum": "aNum",
-        "human_answer_boldNum": "boldNum",
-        "human_answer_italicNum": "italicNum",
-        "human_answer_ulNum": "ulNum",
-        "human_answer_olNum": "olNum",
-        "human_answer_liNum": "liNum",
-        "human_answer_blockquoteNum": "blockquoteNum",
-        "human_answer_hrNum": "hrNum",
-        "human_answer_tableNum": "tableNum",
+        "textLength": "textLength",
+        "textLengthCN": "textLengthCN",
+        "codeLength": "codeLength",
+        "imgNum": "imgNum",
+        "brNum": "brNum",
+        "codeNum": "codeNum",
+        "inlinecodeNum": "inlinecodeNum",
+        "interlinecodeNum": "interlinecodeNum",
+        "hrefNum": "hrefNum",
+        "aNum": "aNum",
+        "boldNum": "boldNum",
+        "italicNum": "italicNum",
+        "ulNum": "ulNum",
+        "olNum": "olNum",
+        "liNum": "liNum",
+        "blockquoteNum": "blockquoteNum",
+        "hrNum": "hrNum",
+        "tableNum": "tableNum",
     }
     _require_columns(content, list(rename_map.keys()), "human_answer_content_metrics")
     return content.rename(columns=rename_map)
@@ -423,17 +423,17 @@ def _generate_geek_ask(question_row: pd.Series) -> dict:
 def _generate_other_ask(question_row: pd.Series) -> dict:
     out = {}
     question_field_map = {
-        "codeLength": "question_codeLength",
-        "textLength": "question_textLength",
-        "textLengthCN": "question_textLengthCN",
+        "codeLength": "codeLength",
+        "textLength": "textLength",
+        "textLengthCN": "textLengthCN",
         "accept": "accept",
         "netlikeNum": "netlikeNum",
-        "ulNum": "question_ulNum",
-        "olNum": "question_olNum",
-        "brNum": "question_brNum",
-        "codeNum": "question_codeNum",
-        "interlinecodeNum": "question_interlinecodeNum",
-        "aNum": "question_aNum",
+        "ulNum": "ulNum",
+        "olNum": "olNum",
+        "brNum": "brNum",
+        "codeNum": "codeNum",
+        "interlinecodeNum": "interlinecodeNum",
+        "aNum": "aNum",
     }
     for field in ASK_SUM_FIELDS:
         source_field = question_field_map.get(field, field)
@@ -641,13 +641,18 @@ def _build_question_level_core(question_rows: pd.DataFrame, answers_augmented: p
 
 
 def _build_question_que_sums(questions: pd.DataFrame, answers_augmented: pd.DataFrame) -> pd.DataFrame:
-    base = questions[["questionURL", "views", "focusNum", "collectNum"]].copy()
-    grouped = answers_augmented.groupby("questionURL").agg(
-        hiddenanswer_que=("hiddenanswer", "sum"),
-        answer_que=("answer", "sum"),
-        accepted_que=("accepted", "sum"),
-    ).reset_index()
-    return base.merge(grouped, on="questionURL", how="left")
+    sum_fields = ["hiddenanswer", "answer", "accepted", "views", "focusNum", "collectNum"]
+    question_rows = questions[["questionURL", "views", "focusNum", "collectNum"]].copy()
+    question_rows["hiddenanswer"] = 0
+    question_rows["answer"] = 0
+    question_rows["accepted"] = 0
+    answer_rows = answers_augmented[["questionURL", "hiddenanswer", "answer", "accepted"]].copy()
+    answer_rows["views"] = 0
+    answer_rows["focusNum"] = 0
+    answer_rows["collectNum"] = 0
+    cmn2question = pd.concat([question_rows[["questionURL"] + sum_fields], answer_rows[["questionURL"] + sum_fields]], ignore_index=True)
+    sums = cmn2question.groupby("questionURL")[sum_fields].sum().add_suffix("_que")
+    return sums.reset_index()
 
 
 def _build_tag_level_context(questions: pd.DataFrame, answers_augmented: pd.DataFrame) -> pd.DataFrame:

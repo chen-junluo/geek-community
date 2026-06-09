@@ -1,10 +1,20 @@
-# Artifact:  intermediate/full_answer_MISQ
-# 输入:      data/features/full_answer_intermediate.csv, data/features/question_intermediate_MISQ.csv
-# Grain:     answer-level (questionURL × answer_id)
-# Merge keys: questionURL, answer_id
-# 输出:      data/features/full_answer_intermediate_MISQ.csv
+# Artifact:    intermediate/full_answer_intermediate_MISQ
+# Grain:       full_answer
+# Merge Keys:  questionURL, answer_id
 #
-# 逻辑：把 full-answer universe 收紧到 MISQ sample，只保留 MISQ questions 对应的 AI + human rows。
+# Inputs:
+#   - full_answer_intermediate.csv
+#   - question_intermediate_MISQ.csv
+#
+# Output:      data/features/full_answer_intermediate_MISQ.csv
+#   - Index: questionURL, answer_id, answer_source
+#   - Core: (same as full_answer_intermediate)
+#   - Derived: —
+#
+# Logic:
+#   - Filter full_answer_intermediate to MISQ sample questions
+#   - Inner join on questionURL with question_intermediate_MISQ
+#   - Preserve all AI + human answers for MISQ questions
 
 import os
 
