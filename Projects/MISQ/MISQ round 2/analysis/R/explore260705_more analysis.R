@@ -816,18 +816,18 @@ print(screenreg(models,
 ##############################################
 ######## accumRep_firsthuman分组然后做2x2子样本回归，没有显著结果
 ##############################################
-mydata_answer_firstHumanAns_reputation = mydata_answer_firstHumanAns %>% filter(!is.na(accumRep))
-summary(mydata_answer_firstHumanAns_reputation$accumRep)
-# 改名为accumRep_firsthuman之后 merge到对应的mydata_AI上面去 按照questionURL
-mydata_answer_firstHumanAns_reputation <- mydata_answer_firstHumanAns_reputation %>% rename(accumRep_firsthuman = accumRep)
-mydata_AI <- mydata_AI %>% left_join(mydata_answer_firstHumanAns_reputation %>% dplyr::select(questionURL, accumRep_firsthuman), by = "questionURL")
+mydata_answer_firstHumanAns_reputation = mydata_answer_firstHumanAns %>% filter(!is.na(acceptedBefore_within_all))
+summary(mydata_answer_firstHumanAns_reputation$acceptedBefore_within_all)
+# 改名为acceptedBefore_within_all_firsthuman之后 merge到对应的mydata_AI上面去 按照questionURL
+mydata_answer_firstHumanAns_reputation <- mydata_answer_firstHumanAns_reputation %>% rename(acceptedBefore_within_all_firsthuman = acceptedBefore_within_all)
+mydata_AI <- mydata_AI %>% left_join(mydata_answer_firstHumanAns_reputation %>% dplyr::select(questionURL, acceptedBefore_within_all_firsthuman), by = "questionURL")
 
 
 
-median_diff <- median(mydata_AI$accumRep_firsthuman, na.rm = TRUE)
-mydata_AI$reputation_high <- ifelse(mydata_AI$accumRep_firsthuman >= median_diff, 1, 0)
-mydata_AI_low  <- mydata_AI[mydata_AI$accumRep_firsthuman <= median_diff, ]
-mydata_AI_high <- mydata_AI[mydata_AI$accumRep_firsthuman >  median_diff, ]
+median_diff <- median(mydata_AI$acceptedBefore_within_all_firsthuman, na.rm = TRUE)
+mydata_AI$reputation_high <- ifelse(mydata_AI$acceptedBefore_within_all_firsthuman >= median_diff, 1, 0)
+mydata_AI_low  <- mydata_AI[mydata_AI$acceptedBefore_within_all_firsthuman <= median_diff, ]
+mydata_AI_high <- mydata_AI[mydata_AI$acceptedBefore_within_all_firsthuman >  median_diff, ]
 
 models <- list()
 models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI*reputation_high+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )*reputation_high
@@ -865,6 +865,27 @@ print(screenreg(models,
           omit.coef = omit_pattern
 ))
 
+# =======================================================================
+#                               DV: human 1 quality  DV: human 1 quality 
+# -----------------------------------------------------------------------
+# AI                              -0.208 *             -0.039            【overconfidence】
+#                                 (0.101)              (0.079)           
+# AI:log_textLengthCNAI_fillna    -0.000               -0.026 *          【Expert are not affected by length, rookie regard length as depressing heuristic】
+#                                 (0.016)              (0.013)           
+# AI:AISimWithOpus47_fillna        0.379 ***            0.332 ***        【expert -> facing surprise, stronger identity threat】
+#                                 (0.054)              (0.048)           
+# -----------------------------------------------------------------------
+# Num. obs.                     1270                 1415                
+# F statistic (full model)         1.938                1.684            
+# F (full model): p-value          0.000                0.000            
+# F statistic (proj model)         5.772                3.374            
+# F (proj model): p-value          0.000                0.000            
+# =======================================================================
+# *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
+
+
+
+
 
 ##############################################
 ######## 【√】Test 5 — Effort-proxy outcome test **【DV as length】**
@@ -884,11 +905,17 @@ models[["DV: fist human length (effort)"]] <- felm(log_textLengthCN_firsthuman ~
       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
       | dayofyear | 0 | 0, data = mydata_AI
 )
-models[["DV: fist human length (effort) "]] <- felm(log_textLengthCN_firsthuman ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
+models[["DV: fist human length (effort) "]] <- felm(log_textLengthCN_firsthuman ~ AI
       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI
+      | dayofyear | 0 | 0, data = mydata_AI_high
+)
+models[["DV: fist human length (effort)  "]] <- felm(log_textLengthCN_firsthuman ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI_high
 )
 print(screenreg(models,
           stars = c(0.1, 0.05, 0.01, 0.001),
@@ -897,6 +924,24 @@ print(screenreg(models,
           include.groups = FALSE, single.row = FALSE,
           omit.coef = omit_pattern
 ))
+# =============================================================================================
+#                               DV: fist human length (effort)  DV: fist human length (effort) 
+# ---------------------------------------------------------------------------------------------
+# AI                               0.074                          -1.439 ***                   【facing AI, not to replicate breadth】
+#                                 (0.050)                         (0.369)                      
+# AI:log_textLengthCNAI_fillna                                     0.324 ***                   【reference point/length work in quality stage】
+#                                                                 (0.060)                      
+# AI:AISimWithOpus47_fillna                                       -0.582 *                     【facing AI, not to replicate breadth】
+#                                                                 (0.237)                      
+# ---------------------------------------------------------------------------------------------
+# Num. obs.                     2748                            2739                           
+# F statistic (full model)         1.907                           2.097                       
+# F (full model): p-value          0.000                           0.000                       
+# F statistic (proj model)         4.051                           4.830                       
+# F (proj model): p-value          0.000                           0.000                       
+# =============================================================================================
+# *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
+
 
 # 【改成全答案长度】
 mydata_answer_firstHumanAns_length = mydata_answer_firstHumanAns %>% filter(!is.na(textLength))
@@ -928,6 +973,36 @@ print(screenreg(models,
           omit.coef = omit_pattern
 ))
 
+
+# 【改成代码长度】
+mydata_answer_firstHumanAns_length = mydata_answer_firstHumanAns %>% filter(!is.na(codeLength))
+summary(mydata_answer_firstHumanAns_length$codeLength)
+# 改名为codeLength_firsthuman之后 merge到对应的mydata_AI上面去 按照questionURL
+mydata_answer_firstHumanAns_length <- mydata_answer_firstHumanAns_length %>% rename(codeLength_firsthuman = codeLength)
+mydata_AI <- mydata_AI %>% left_join(mydata_answer_firstHumanAns_length %>% dplyr::select(questionURL, codeLength_firsthuman), by = "questionURL")
+# log codeLength_firsthuman
+mydata_AI <- mydata_AI %>% mutate(log_codeLength_firsthuman = log(codeLength_firsthuman + 1))
+
+models <- list()
+models[["DV: fist human length (effort)"]] <- felm(log_codeLength_firsthuman ~ AI
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI
+)
+models[["DV: fist human length (effort) "]] <- felm(log_codeLength_firsthuman ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI
+)
+print(screenreg(models,
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
+          include.groups = FALSE, single.row = FALSE,
+          omit.coef = omit_pattern
+))
 
 
 ##############################################
