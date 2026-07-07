@@ -751,7 +751,7 @@ models[["  "]] <- coxph(surv_human_answer ~ treatment+treatment:(log_textLengthC
 
 
 ##############################################
-######## difficulty_score分组然后做2x2子样本回归，没有显著结果
+######## difficulty_score分组然后做2x2子样本回归
 ##############################################
 median_diff <- median(mydata_AI$difficulty_score, na.rm = TRUE)
 mean_diff <- mean(mydata_AI$difficulty_score, na.rm = TRUE)
@@ -759,26 +759,26 @@ mydata_AI$difficulty_high <- ifelse(mydata_AI$difficulty_score >= median_diff, 1
 mydata_AI_low  <- mydata_AI[mydata_AI$difficulty_score < median_diff, ]
 mydata_AI_high <- mydata_AI[mydata_AI$difficulty_score >=  median_diff, ]
 
-models <- list()
-models[["DV: # human answers "]] <- felm(log_answer_que_within7day ~ AI*difficulty_high+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)*difficulty_high
-      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI
-)
-models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI*difficulty_high+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )*difficulty_high
-      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI
-)
-print(screenreg(models,
-          stars = c(0.1, 0.05, 0.01, 0.001),
-          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
-          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
-          include.groups = FALSE, single.row = FALSE,
-          omit.coef = omit_pattern
-))
+# models <- list()
+# models[["DV: # human answers "]] <- felm(log_answer_que_within7day ~ AI*difficulty_high+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)*difficulty_high
+#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+#       | dayofyear | 0 | 0, data = mydata_AI
+# )
+# models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI*difficulty_high+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )*difficulty_high
+#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+#       | dayofyear | 0 | 0, data = mydata_AI
+# )
+# print(screenreg(models,
+#           stars = c(0.1, 0.05, 0.01, 0.001),
+#           digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+#           include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
+#           include.groups = FALSE, single.row = FALSE,
+#           omit.coef = omit_pattern
+# ))
 
 models <- list()
 models[["DV: # human answers"]] <- felm(log_answer_que_within7day ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
@@ -793,18 +793,18 @@ models[["DV: # human answers "]] <- felm(log_answer_que_within7day ~ AI+AI:(log_
       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
       | dayofyear | 0 | 0, data = mydata_AI_low
 )
-models[["DV: human 1 quality"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )
-      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI_high
-)
-models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )
-      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI_low
-)
+# models[["DV: human 1 quality"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )
+#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+#       | dayofyear | 0 | 0, data = mydata_AI_high
+# )
+# models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )
+#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+#       | dayofyear | 0 | 0, data = mydata_AI_low
+# )
 print(screenreg(models,
           stars = c(0.1, 0.05, 0.01, 0.001),
           digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
@@ -812,7 +812,32 @@ print(screenreg(models,
           include.groups = FALSE, single.row = FALSE,
           omit.coef = omit_pattern
 ))
+wordreg(models,
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          file = "Projects/MISQ/MISQ round 2/analysis/outputs/explore260707_addtional1.docx", inline.css = FALSE, doctype = FALSE, html.tag = TRUE, head.tag = TRUE, body.tag = TRUE,
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE,
+          include.groups = FALSE, single.row = FALSE,
+          omit.coef = omit_pattern
+)
 
+# =======================================================================
+#                               DV: # human answers  DV: # human answers 
+# -----------------------------------------------------------------------
+# AI                               0.304 **             0.029            difficult question -> AI weak competitor -> let me answer
+#                                 (0.106)              (0.138)           easy question -> AI even weak still enough
+# AI:log_textLengthCNAI_fillna    -0.058 ***           -0.009            difficult question + AI lengthy -> may be comprehensive -> deter
+#                                 (0.017)              (0.024)           easy question + AI length -> AI is enough
+# AI:AISimWithOpus47_fillna       -0.018               -0.060            
+#                                 (0.066)              (0.085)           
+# -----------------------------------------------------------------------
+# Num. obs.                     2373                 1230                
+# F statistic (full model)         2.106                1.790            
+# F (full model): p-value          0.000                0.000            
+# F statistic (proj model)         5.162                6.549            
+# F (proj model): p-value          0.000                0.000            
+# =======================================================================
+# *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
 
 ##############################################
 ######## accumRep_firsthuman分组然后做2x2子样本回归，没有显著结果
@@ -826,24 +851,25 @@ mydata_AI <- mydata_AI %>% left_join(mydata_answer_firstHumanAns_reputation %>% 
 
 
 median_diff <- median(mydata_AI$acceptedBefore_within_all_firsthuman, na.rm = TRUE)
+mean_diff <- mean(mydata_AI$acceptedBefore_within_all_firsthuman, na.rm = TRUE)
 mydata_AI$reputation_high <- ifelse(mydata_AI$acceptedBefore_within_all_firsthuman >= median_diff, 1, 0)
-mydata_AI_low  <- mydata_AI[mydata_AI$acceptedBefore_within_all_firsthuman <= median_diff, ]
-mydata_AI_high <- mydata_AI[mydata_AI$acceptedBefore_within_all_firsthuman >  median_diff, ]
+mydata_AI_low  <- mydata_AI[mydata_AI$acceptedBefore_within_all_firsthuman < median_diff, ]
+mydata_AI_high <- mydata_AI[mydata_AI$acceptedBefore_within_all_firsthuman >=  median_diff, ]
 
-models <- list()
-models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI*reputation_high+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )*reputation_high
-      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI
-)
-print(screenreg(models,
-          stars = c(0.1, 0.05, 0.01, 0.001),
-          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
-          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
-          include.groups = FALSE, single.row = FALSE,
-          omit.coef = omit_pattern
-))
+# models <- list()
+# models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI*reputation_high+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )*reputation_high
+#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+#       | dayofyear | 0 | 0, data = mydata_AI
+# )
+# print(screenreg(models,
+#           stars = c(0.1, 0.05, 0.01, 0.001),
+#           digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+#           include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
+#           include.groups = FALSE, single.row = FALSE,
+#           omit.coef = omit_pattern
+# ))
 
 models <- list()
 models[["DV: human 1 quality"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )
@@ -865,6 +891,14 @@ print(screenreg(models,
           include.groups = FALSE, single.row = FALSE,
           omit.coef = omit_pattern
 ))
+wordreg(models,
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          file = "Projects/MISQ/MISQ round 2/analysis/outputs/explore260707_addtional2.docx", inline.css = FALSE, doctype = FALSE, html.tag = TRUE, head.tag = TRUE, body.tag = TRUE,
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE,
+          include.groups = FALSE, single.row = FALSE,
+          omit.coef = omit_pattern
+)
 
 # =======================================================================
 #                               DV: human 1 quality  DV: human 1 quality 
