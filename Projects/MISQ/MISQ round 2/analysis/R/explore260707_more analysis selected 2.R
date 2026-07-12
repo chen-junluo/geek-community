@@ -758,6 +758,12 @@ mean_diff <- mean(mydata_AI$difficulty_score, na.rm = TRUE)
 mydata_AI$difficulty_high <- ifelse(mydata_AI$difficulty_score >= median_diff, 1, 0)
 mydata_AI_low  <- mydata_AI[mydata_AI$difficulty_score < median_diff, ]
 mydata_AI_high <- mydata_AI[mydata_AI$difficulty_score >=  median_diff, ]
+# 按照top25和low75分组 
+summary(mydata_AI$difficulty_score)
+quantile(mydata_AI$difficulty_score, 0.75, na.rm = TRUE) # 6
+quantile(mydata_AI$difficulty_score, 0.25, na.rm = TRUE) # 4
+mydata_AI_top25 <- mydata_AI %>% filter(difficulty_score >= 6)
+mydata_AI_low75 <- mydata_AI %>% filter(difficulty_score == 4)
 
 # models <- list()
 # models[["DV: # human answers "]] <- felm(log_answer_que_within7day ~ AI*difficulty_high+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)*difficulty_high
@@ -793,18 +799,18 @@ models[["DV: # human answers "]] <- felm(log_answer_que_within7day ~ AI+AI:(log_
       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
       | dayofyear | 0 | 0, data = mydata_AI_low
 )
-# models[["DV: human 1 quality"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )
-#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-#       | dayofyear | 0 | 0, data = mydata_AI_high
-# )
-# models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )
-#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-#       | dayofyear | 0 | 0, data = mydata_AI_low
-# )
+models[["DV: human 1 quality"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI_top25
+)
+models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI_low75
+)
 print(screenreg(models,
           stars = c(0.1, 0.05, 0.01, 0.001),
           digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
@@ -855,6 +861,48 @@ mean_diff <- mean(mydata_AI$acceptedBefore_within_all_firsthuman, na.rm = TRUE)
 mydata_AI$reputation_high <- ifelse(mydata_AI$acceptedBefore_within_all_firsthuman >= median_diff, 1, 0)
 mydata_AI_low  <- mydata_AI[mydata_AI$acceptedBefore_within_all_firsthuman < median_diff, ]
 mydata_AI_high <- mydata_AI[mydata_AI$acceptedBefore_within_all_firsthuman >=  median_diff, ]
+# 把两个data拼到一起变成一个data，搞一个group indicator
+mydata_AI_high = mydata_AI_high %>% mutate(group = "high")
+mydata_AI_low = mydata_AI_low %>% mutate(group = "low")
+mydata_AI_combined <- bind_rows(mydata_AI_high, mydata_AI_low)
+mydata_AI_combined$group <- factor(mydata_AI_combined$group, levels = c("high", "low"))
+
+
+# 按照top25和low75分组 
+summary(mydata_AI$acceptedBefore_within_all_firsthuman)
+quantile(mydata_AI$acceptedBefore_within_all_firsthuman, 0.75, na.rm = TRUE) # 25.25
+quantile(mydata_AI$acceptedBefore_within_all_firsthuman, 0.25, na.rm = TRUE) # 0
+mydata_AI_top25 <- mydata_AI %>% filter(acceptedBefore_within_all_firsthuman > 25.25)
+mydata_AI_low75 <- mydata_AI %>% filter(acceptedBefore_within_all_firsthuman == 0)
+# =======================================================================
+#                               DV: human 1 quality  DV: human 1 quality 
+# -----------------------------------------------------------------------
+# AI                             -0.164                0.004             
+#                                (0.115)              (0.095)            
+# AI:log_textLengthCNAI_fillna   -0.010               -0.032 *           
+#                                (0.018)              (0.016)            
+# AI:AISimWithOpus47_fillna       0.414 ***            0.328 ***         
+#                                (0.081)              (0.059)            
+# -----------------------------------------------------------------------
+# Num. obs.                     673                  965                 
+# F statistic (full model)        1.368                1.293             
+# F (full model): p-value         0.005                0.011             
+# F statistic (proj model)        2.815                2.140             
+# F (proj model): p-value         0.000                0.000             
+# =======================================================================
+# *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
+
+# 按照top25和low75分组 
+summary(mydata_AI$acceptedBefore_within_all_firsthuman)
+quantile(mydata_AI$acceptedBefore_within_all_firsthuman, 0.75, na.rm = TRUE) # 25.25
+quantile(mydata_AI$acceptedBefore_within_all_firsthuman, 0.25, na.rm = TRUE) # 0
+mydata_AI_top25 <- mydata_AI %>% filter(acceptedBefore_within_all_firsthuman >= 25.25)
+mydata_AI_low75 <- mydata_AI %>% filter(acceptedBefore_within_all_firsthuman == 0)
+# 把两个data拼到一起变成一个data，搞一个group indicator
+mydata_AI_top25$group <- "top25"
+mydata_AI_low75$group <- "low75"
+mydata_AI_combined <- bind_rows(mydata_AI_top25, mydata_AI_low75)
+mydata_AI_combined$group <- factor(mydata_AI_combined$group, levels = c("top25", "low75"))
 
 # models <- list()
 # models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI*reputation_high+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )*reputation_high
@@ -876,13 +924,19 @@ models[["DV: human 1 quality"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+A
       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI_high
+      | dayofyear | 0 | 0, data = mydata_AI_top25
 )
 models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )
       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI_low
+      | dayofyear | 0 | 0, data = mydata_AI_low75
+)
+models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AISimWithOpus47_fillna*group
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI_combined
 )
 print(screenreg(models,
           stars = c(0.1, 0.05, 0.01, 0.001),
