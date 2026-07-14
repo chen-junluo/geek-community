@@ -155,3 +155,103 @@ print(screenreg(
   include.groups = FALSE, single.row = FALSE,
   omit.coef = omit_pattern
 ))
+
+# 4. difficulty_score: median split; DV = log_answer_que_within7day (three columns incl. interaction)
+difficulty_subgroup_formula <- as.formula(paste(
+  "log_answer_que_within7day ~ AI + AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna) +",
+  paste(controls, collapse = " + "), "| dayofyear | 0 | 0"
+))
+difficulty_interaction_formula <- as.formula(paste(
+  "log_answer_que_within7day ~ (AI + AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna))* group +",
+  paste(controls, collapse = " + "), "| dayofyear | 0 | 0"
+))
+
+median_difficulty <- median(mydata_AI$difficulty_score, na.rm = TRUE)
+summary(mydata_AI$difficulty_score)
+
+mydata_AI_difficulty_low <- mydata_AI %>%
+  filter(difficulty_score < median_difficulty) %>%
+  mutate(group = "low")
+mydata_AI_difficulty_high <- mydata_AI %>%
+  filter(difficulty_score >= median_difficulty) %>%
+  mutate(group = "high")
+mydata_AI_difficulty_combined <- bind_rows(
+  mydata_AI_difficulty_low,
+  mydata_AI_difficulty_high
+) %>%
+  mutate(group = factor(group, levels = c("low", "high")))
+
+models_difficulty <- list()
+models_difficulty[["Low: < median"]] <- felm(difficulty_subgroup_formula, data = mydata_AI_difficulty_low)
+models_difficulty[["High: >= median"]] <- felm(difficulty_subgroup_formula, data = mydata_AI_difficulty_high)
+models_difficulty[["Interaction"]] <- felm(difficulty_interaction_formula, data = mydata_AI_difficulty_combined)
+print(screenreg(
+  models_difficulty,
+  stars = c(0.1, 0.05, 0.01, 0.001),
+  digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+  include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
+  include.groups = FALSE, single.row = FALSE,
+  omit.coef = omit_pattern
+))
+
+# 5. expertise (acceptedBefore_within_all_firsthuman): top 25% vs bottom 25% (three columns incl. interaction)
+q25_expertise <- quantile(mydata_AI$acceptedBefore_within_all_firsthuman, 0.25, na.rm = TRUE)
+q75_expertise <- quantile(mydata_AI$acceptedBefore_within_all_firsthuman, 0.75, na.rm = TRUE)
+summary(mydata_AI$acceptedBefore_within_all_firsthuman)
+
+mydata_AI_expertise_low <- mydata_AI %>%
+  filter(acceptedBefore_within_all_firsthuman <= q25_expertise) %>%
+  mutate(group = "low")
+mydata_AI_expertise_high <- mydata_AI %>%
+  filter(acceptedBefore_within_all_firsthuman >= q75_expertise) %>%
+  mutate(group = "high")
+mydata_AI_expertise_combined <- bind_rows(
+  mydata_AI_expertise_low,
+  mydata_AI_expertise_high
+) %>%
+  mutate(group = factor(group, levels = c("low", "high")))
+
+models_expertise <- list()
+models_expertise[["Bottom 25%"]] <- felm(subgroup_formula, data = mydata_AI_expertise_low)
+models_expertise[["Top 25%"]] <- felm(subgroup_formula, data = mydata_AI_expertise_high)
+models_expertise[["Interaction"]] <- felm(interaction_formula, data = mydata_AI_expertise_combined)
+print(screenreg(
+  models_expertise,
+  stars = c(0.1, 0.05, 0.01, 0.001),
+  digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+  include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
+  include.groups = FALSE, single.row = FALSE,
+  omit.coef = omit_pattern
+))
+
+# 6. difficult (difficulty_score >= median) x rookie (acceptedBefore < median) subgroups; four columns
+#    A  = difficult AND rookie
+#    B  = difficult OR  rookie
+#    ~A = complement of A
+#    ~B = complement of B (i.e. NOT difficult AND NOT rookie)
+mydata_AI_flags <- mydata_AI %>%
+  mutate(
+    is_difficult = difficulty_score >= median_difficulty,
+    is_rookie = acceptedBefore_within_all_firsthuman < median_acceptedBefore
+  ) %>%
+  filter(!is.na(is_difficult), !is.na(is_rookie))
+
+mydata_AI_subgroup_A <- mydata_AI_flags %>% filter(is_difficult & is_rookie)
+mydata_AI_subgroup_B <- mydata_AI_flags %>% filter(is_difficult | is_rookie)
+mydata_AI_subgroup_notA <- mydata_AI_flags %>% filter(!(is_difficult & is_rookie))
+mydata_AI_subgroup_notB <- mydata_AI_flags %>% filter(!(is_difficult | is_rookie))
+
+models_diff_rookie <- list()
+models_diff_rookie[["A: difficult & rookie"]] <- felm(subgroup_formula, data = mydata_AI_subgroup_A)
+models_diff_rookie[["B: difficult | rookie"]] <- felm(subgroup_formula, data = mydata_AI_subgroup_B)
+models_diff_rookie[["~A"]] <- felm(subgroup_formula, data = mydata_AI_subgroup_notA)
+models_diff_rookie[["~B"]] <- felm(subgroup_formula, data = mydata_AI_subgroup_notB)
+print(screenreg(
+  models_diff_rookie,
+  stars = c(0.1, 0.05, 0.01, 0.001),
+  digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+  include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
+  include.groups = FALSE, single.row = FALSE,
+  omit.coef = omit_pattern
+))
+
