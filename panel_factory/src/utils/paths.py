@@ -52,6 +52,7 @@ ARTIFACT_PATHS = {
         "question_human1_accepted_answer_similarity_misq": os.path.join(_BASE, "features", "question_human1_accepted_answer_similarity_MISQ.csv"),
         "question_llm_ground_truth_similarity_misq": os.path.join(_BASE, "features", "question_llm_ground_truth_similarity_MISQ.csv"),
         "question_human1_llm_ground_truth_similarity_misq": os.path.join(_BASE, "features", "question_human1_llm_ground_truth_similarity_MISQ.csv"),
+        "question_human2_llm_ground_truth_similarity_misq": os.path.join(_BASE, "features", "question_human2_llm_ground_truth_similarity_MISQ.csv"),
         # question-level human pairwise similarity（treatment: all humans; control: drop first human）
         "question_human_pairwise_similarity": os.path.join(_BASE, "features", "question_human_pairwise_similarity.csv"),
         # question-level answer timing counts from MISQ raw thread chronology

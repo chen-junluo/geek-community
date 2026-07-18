@@ -13,6 +13,7 @@
 #   - question_human1_accepted_answer_similarity_MISQ.csv
 #   - question_llm_ground_truth_similarity_MISQ.csv
 #   - question_human1_llm_ground_truth_similarity_MISQ.csv
+#   - question_human2_llm_ground_truth_similarity_MISQ.csv
 #   - question_aggregation_from_answers.csv
 #   - user_activity_experience.csv
 #
@@ -203,6 +204,7 @@ def build():
         "question_human1_accepted_answer_similarity_misq",
         "question_llm_ground_truth_similarity_misq",
         "question_human1_llm_ground_truth_similarity_misq",
+        "question_human2_llm_ground_truth_similarity_misq",
         "question_aggregation_from_answers",
     ]
 
