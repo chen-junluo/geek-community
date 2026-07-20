@@ -691,16 +691,47 @@ mydata_AI_isNOTAI <- mydata_AI %>% filter(treatment == 0)
 
 
 
-
-
-
-
-
-
-
-
-
-
+##############################################
+######## main models
+##############################################
+models <- list()
+models[["DV: # human answers"]] <- felm(log_answer_que_within7day ~ AI
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI
+)
+models[["DV: # human answers "]] <- felm(log_answer_que_within7day ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI
+)
+models[["DV: human 1 quality"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI)
+models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI)
+print(screenreg(models,
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
+          include.groups = FALSE, single.row = FALSE,
+          omit.coef = omit_pattern
+))
+wordreg(models,
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          file = "Projects/MISQ/MISQ round 2/analysis/outputs/meeting260719_mainmodels.docx", inline.css = FALSE, doctype = FALSE, html.tag = TRUE, head.tag = TRUE, body.tag = TRUE,
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE,
+          include.groups = FALSE, single.row = FALSE,
+          omit.coef = omit_pattern
+)
 
 
 
@@ -708,7 +739,7 @@ mydata_AI_isNOTAI <- mydata_AI %>% filter(treatment == 0)
 
 
 ##############################################
-######## difficulty_score分组然后做2x2子样本回归
+######## H1 direct test: difficulty_score分组然后做2x2子样本回归
 ##############################################
 median_diff <- median(mydata_AI$difficulty_score, na.rm = TRUE)
 mean_diff <- mean(mydata_AI$difficulty_score, na.rm = TRUE)
@@ -721,27 +752,6 @@ quantile(mydata_AI$difficulty_score, 0.75, na.rm = TRUE) # 6
 quantile(mydata_AI$difficulty_score, 0.25, na.rm = TRUE) # 4
 mydata_AI_top25 <- mydata_AI %>% filter(difficulty_score >= 6)
 mydata_AI_low75 <- mydata_AI %>% filter(difficulty_score == 4)
-
-# models <- list()
-# models[["DV: # human answers "]] <- felm(log_answer_que_within7day ~ AI*difficulty_high+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)*difficulty_high
-#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-#       | dayofyear | 0 | 0, data = mydata_AI
-# )
-# models[["DV: human 1 quality "]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI*difficulty_high+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna )*difficulty_high
-#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-#       | dayofyear | 0 | 0, data = mydata_AI
-# )
-# print(screenreg(models,
-#           stars = c(0.1, 0.05, 0.01, 0.001),
-#           digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
-#           include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
-#           include.groups = FALSE, single.row = FALSE,
-#           omit.coef = omit_pattern
-# ))
 
 models <- list()
 models[["DV: # human answers"]] <- felm(log_answer_que_within7day ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
@@ -763,356 +773,37 @@ print(screenreg(models,
           include.groups = FALSE, single.row = FALSE,
           omit.coef = omit_pattern
 ))
-
-
-##############################################
-######## AI quality diff
-##############################################
-mydata_AI$AISimWithOpus47_fillna_power2 = mydata_AI$AISimWithOpus47_fillna^2
-mydata_AI$AISimWithOpus47_fillna_power3 = mydata_AI$AISimWithOpus47_fillna^3
-
-models <- list()
-models[["DV: human 1 quality"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
-      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI)
-print(screenreg(models,
+wordreg(models,
           stars = c(0.1, 0.05, 0.01, 0.001),
+          file = "Projects/MISQ/MISQ round 2/analysis/outputs/meeting260719_H1.docx", inline.css = FALSE, doctype = FALSE, html.tag = TRUE, head.tag = TRUE, body.tag = TRUE,
           digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
-          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE,
           include.groups = FALSE, single.row = FALSE,
           omit.coef = omit_pattern
-))
-
-vars_used <- c(
-  "human1SimWithGT__claude_opus_4_7",
-  "AI",
-  "log_textLengthCNAI_fillna",
-  "AISimWithOpus47_fillna",
-  "AISimWithOpus47_fillna_power2",
-  "log_textLengthCN_ask", "IimgNum_ask", "IaNum_ask", "IblockquoteNum_ask", "ItableNum_ask",
-  "lingComp_score", "techJargon_score", "difficulty_score",
-  "category1", "category2", "category3", "category4", "category5", "category6", "category7", "category8", "category9",
-  "log_age", "log_askBefore", "log_resBefore", "log_accumRep_ask",
-  "accumGold_ask", "accumSilver_ask", "accumCopper_ask",
-  "asker_acceptedBefore_allsite_1m", "asker_nActivityBeforeAsk_allsite_1m",
-  "asker_nActivityBeforeResp_allsite_1m", "asker_nActivityBeforeComment_allsite_1m",
-  "asker_acceptedBefore_allsite_2m", "asker_nActivityBeforeAsk_allsite_2m",
-  "asker_nActivityBeforeResp_allsite_2m", "asker_nActivityBeforeComment_allsite_2m",
-  "asker_acceptedBefore_allsite_3m", "asker_nActivityBeforeAsk_allsite_3m",
-  "asker_nActivityBeforeResp_allsite_3m", "asker_nActivityBeforeComment_allsite_3m",
-  "dayofyear"
 )
-
-nrow(mydata_AI)
-sum(complete.cases(mydata_AI[, vars_used]))
-
-sort(colSums(is.na(mydata_AI[, vars_used])), decreasing = TRUE)[1:15]
-
-
-# =====================================================
-#                                   DV: human 1 quality
-# -----------------------------------------------------
-# AI                                  -0.073           
-#                                     (0.084)          
-# AI:log_textLengthCNAI_fillna        -0.007           
-#                                     (0.013)          
-# AI:AISimWithOpus47_fillna           -0.030           
-#                                     (0.183)          
-# AI:AISimWithOpus47_fillna_power2     0.361 *         
-#                                     (0.175)          
-# -----------------------------------------------------
-# Num. obs.                         2017               
-# F statistic (full model)             2.199           
-# F (full model): p-value              0.000           
-# F statistic (proj model)             5.987           
-# F (proj model): p-value              0.000           
-# =====================================================
+# =======================================================================
+#                               DV: # human answers  DV: # human answers 
+# -----------------------------------------------------------------------
+# AI                               0.304 **             0.029            
+#                                 (0.106)              (0.138)           
+# AI:log_textLengthCNAI_fillna    -0.058 ***           -0.009            
+#                                 (0.017)              (0.024)           
+# AI:AISimWithOpus47_fillna       -0.018               -0.060            
+#                                 (0.066)              (0.085)           
+# -----------------------------------------------------------------------
+# Num. obs.                     2373                 1230                
+# F statistic (full model)         2.106                1.790            
+# F (full model): p-value          0.000                0.000            
+# F statistic (proj model)         5.162                6.549            
+# F (proj model): p-value          0.000                0.000            
+# =======================================================================
 # *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
-
-mydata_AI$AISimWithOpus47 <- ifelse(
-  (mydata_AI$AISimWithOpus47_fillna)==0,
-  NA,
-  mydata_AI$AISimWithOpus47_fillna
-)
-AISim_p25 <- quantile(mydata_AI$AISimWithOpus47, 0.25, na.rm = TRUE)
-AISim_p50 <- quantile(mydata_AI$AISimWithOpus47, 0.50, na.rm = TRUE)
-AISim_p75 <- quantile(mydata_AI$AISimWithOpus47, 0.75, na.rm = TRUE)
-mydata_AI <- mydata_AI %>% mutate(
-    AISimWithOpus47_fillna_group = case_when(
-        AISimWithOpus47_fillna < AISim_p25 ~ "Q1: low",
-        AISimWithOpus47_fillna >= AISim_p25 & AISimWithOpus47_fillna < AISim_p50 ~ "Q2: mid-low",
-        AISimWithOpus47_fillna >= AISim_p50 & AISimWithOpus47_fillna < AISim_p75 ~ "Q3: mid-high",
-        AISimWithOpus47_fillna >= AISim_p75 ~ "Q4: high",
-        TRUE ~ NA_character_)
-)
-models <- list()
-models[["DV: human 1 quality"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna_group)
-      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI)
-print(screenreg(models,
-          stars = c(0.1, 0.05, 0.01, 0.001),
-          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
-          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
-          include.groups = FALSE, single.row = FALSE,
-          omit.coef = omit_pattern
-))
-# ================================================================
-#                                              DV: human 1 quality
-# ----------------------------------------------------------------
-# AI                                             -0.013           
-#                                                (0.062)          
-# AI:log_textLengthCNAI_fillna                   -0.009           
-#                                                (0.011)          
-# AI:AISimWithOpus47_fillna_groupQ2: mid-low      0.055 ***       
-#                                                (0.014)          
-# AI:AISimWithOpus47_fillna_groupQ3: mid-high     0.074 ***       
-#                                                (0.015)          
-# AI:AISimWithOpus47_fillna_groupQ4: high         0.141 ***       
-#                                                (0.015)          
-# ----------------------------------------------------------------
-# Num. obs.                                    2685               
-# F statistic (full model)                        2.508           
-# F (full model): p-value                         0.000           
-# F statistic (proj model)                        6.935           
-# F (proj model): p-value                         0.000           
-# ================================================================
-# *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
-
-
-mydata_answer_firstHumanAns_reputation = mydata_answer_firstHumanAns %>% filter(!is.na(acceptedBefore_within_all))
-summary(mydata_answer_firstHumanAns_reputation$acceptedBefore_within_all)
-# 改名为acceptedBefore_within_all_firsthuman之后 merge到对应的mydata_AI上面去 按照questionURL
-mydata_answer_firstHumanAns_reputation <- mydata_answer_firstHumanAns_reputation %>% rename(acceptedBefore_within_all_firsthuman = acceptedBefore_within_all)
-mydata_AI <- mydata_AI %>% left_join(mydata_answer_firstHumanAns_reputation %>% dplyr::select(questionURL, acceptedBefore_within_all_firsthuman), by = "questionURL")
-mydata_AI$log_acceptedBefore_within_all_firsthuman <- log(mydata_AI$acceptedBefore_within_all_firsthuman + 1)
-models <- list()
-models[["DV: human 1 expertise"]] <- felm (log_acceptedBefore_within_all_firsthuman ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
-      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI)
-print(screenreg(models,
-          stars = c(0.1, 0.05, 0.01, 0.001),
-          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
-          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
-          include.groups = FALSE, single.row = FALSE,
-          omit.coef = omit_pattern
-))
-# ===============================================
-#                           DV: human 1 expertise
-# -----------------------------------------------
-# AI                           0.076             
-#                             (0.070)            
-# -----------------------------------------------
-# Num. obs.                 2748                 
-# F statistic (full model)     2.366             
-# F (full model): p-value      0.000             
-# F statistic (proj model)    19.686             
-# F (proj model): p-value      0.000             
-# ===============================================
-# *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
-# ===================================================
-#                               DV: human 1 expertise
-# ---------------------------------------------------
-# AI                               0.250             
-#                                 (0.545)            
-# AI:log_textLengthCNAI_fillna     0.006             
-#                                 (0.089)            
-# AI:AISimWithOpus47_fillna       -0.394             
-#                                 (0.362)            
-# ---------------------------------------------------
-# Num. obs.                     2739                 
-# F statistic (full model)         2.339             
-# F (full model): p-value          0.000             
-# F statistic (proj model)        18.570             
-# F (proj model): p-value          0.000             
-# ===================================================
-# *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
-
-
-# # 2. AISimWithOpus47_fillna: high = above mean; low = zero; strict excludes values equal to mean
-# mydata_AI$AISimWithOpus47 <- ifelse(
-#   (mydata_AI$AISimWithOpus47_fillna)==0,
-#   NA,
-#   mydata_AI$AISimWithOpus47_fillna
-# )
-# mean_AISim <- mean(mydata_AI$AISimWithOpus47, na.rm = TRUE)
-# median_AISim <- median(mydata_AI$AISimWithOpus47, na.rm = TRUE)
-# summary(mydata_AI$AISimWithOpus47)
-
-# mydata_AI_AISim_low <- mydata_AI %>%
-#   filter(AISimWithOpus47_fillna < median_AISim) %>%
-#   mutate(group = "low")
-# mydata_AI_AISim_high <- mydata_AI %>%
-#   filter(AISimWithOpus47_fillna > median_AISim | is.na(AISimWithOpus47)) %>%
-#   mutate(group = "high")
-# mydata_AI_AISim_combined <- bind_rows(mydata_AI_AISim_low, mydata_AI_AISim_high) %>%
-#   mutate(group = factor(group, levels = c("low", "high")))
-
-# models_AISim <- list()
-# models_AISim[["Low: < mean"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
-#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-#       | dayofyear | 0 | 0, data = mydata_AI_AISim_low)
-# models_AISim[["High: > mean"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
-#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-#       | dayofyear | 0 | 0, data = mydata_AI_AISim_high)
-# models_AISim[["pooled interaction"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ (AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna))*group
-#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-#       | dayofyear | 0 | 0, data = mydata_AI_AISim_combined)
-
-# print(screenreg(models_AISim,
-#           stars = c(0.1, 0.05, 0.01, 0.001),
-#           digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
-#           include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
-#           include.groups = FALSE, single.row = FALSE,
-#           omit.coef = omit_pattern
-# ))
-
-# # 3. AISimWithOpus47_fillna: high = top25; low = low25; middle 50% excluded
-# AISim_p25 <- quantile(mydata_AI$AISimWithOpus47, 0.25, na.rm = TRUE)
-# AISim_p75 <- quantile(mydata_AI$AISimWithOpus47, 0.75, na.rm = TRUE)
-# summary(mydata_AI$AISimWithOpus47)
-
-# mydata_AI_AISim_low25 <- mydata_AI %>%
-#   filter(AISimWithOpus47_fillna < AISim_p25) %>%
-#   mutate(group = "low25")
-# mydata_AI_AISim_top25 <- mydata_AI %>%
-#   filter(AISimWithOpus47_fillna > AISim_p75 | is.na(AISimWithOpus47)) %>%
-#   mutate(group = "top25")
-# mydata_AI_AISim_25_combined <- bind_rows(mydata_AI_AISim_low25, mydata_AI_AISim_top25) %>%
-#   mutate(group = factor(group, levels = c("low25", "top25")))
-
-# models_AISim25 <- list()
-# models_AISim25[["Low25"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
-#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-#       | dayofyear | 0 | 0, data = mydata_AI_AISim_low25)
-# models_AISim25[["Top25"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
-#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-#       | dayofyear | 0 | 0, data = mydata_AI_AISim_top25)
-# models_AISim25[["pooled interaction"]] <- felm (human1SimWithGT__claude_opus_4_7 ~ (AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna))*group
-#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-#       | dayofyear | 0 | 0, data = mydata_AI_AISim_25_combined)
-
-# print(screenreg(models_AISim25,
-#           stars = c(0.1, 0.05, 0.01, 0.001),
-#           digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
-#           include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
-#           include.groups = FALSE, single.row = FALSE,
-#           omit.coef = omit_pattern
-# ))
-# # ====================================================================================
-# #                                          Low25        Top25       pooled interaction
-# # ------------------------------------------------------------------------------------
-# # AI                                          0.098       -0.131       0.103          
-# #                                            (0.094)      (0.203)     (0.093)         
-# # AI:log_textLengthCNAI_fillna               -0.048 **    -0.013      -0.049 **       
-# #                                            (0.017)      (0.021)     (0.017)         
-# # AI:AISimWithOpus47_fillna                   0.304 **     0.380 .     0.306 **       
-# #                                            (0.105)      (0.212)     (0.103)         
-# # grouptop25                                                           0.000          
-# #                                                                     (0.007)         
-# # AI:grouptop25                                                       -0.225          
-# #                                                                     (0.217)         
-# # AI:log_textLengthCNAI_fillna:grouptop25                              0.034          
-# #                                                                     (0.026)         
-# # AI:AISimWithOpus47_fillna:grouptop25                                 0.071          
-# #                                                                     (0.232)         
-# # ------------------------------------------------------------------------------------
-# # Num. obs.                                1729         1729        3458              
-# # F statistic (full model)                    1.949        1.923       3.908          
-# # F (full model): p-value                     0.000        0.000       0.000          
-# # F statistic (proj model)                    5.136        4.325       9.126          
-# # F (proj model): p-value                     0.000        0.000       0.000          
-# # ====================================================================================
-# # *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
 
 
 
 ##############################################
-######## setup 2 human1 quality
+######## H2 tests
 ##############################################
-
-mydata_AI <- mydata_AI %>% mutate(
-    SimWithAccept1Ans = ifelse(treatment == 1, AISimWithAccept, human1SimWithAccept),
-    SimWithOpus1Ans = ifelse(treatment == 1, AISimWithGT__claude_opus_4_7, human1SimWithGT__claude_opus_4_7),
-    SimWithOpus2Ans = ifelse(treatment == 1, human1SimWithGT__claude_opus_4_7, human2SimWithGT__claude_opus_4_7),
-    SimWithDeepseek1Ans = ifelse(treatment == 1, AISimWithGT__deepseek_v4_pro, human1SimWithGT__deepseek_v4_pro)
-)
-models <- list()
-models[["DV: quality2Ans"]] <- felm (quality2Ans ~ AI
-      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI
-)
-models[[" "]] <- felm (quality2Ans ~ AI+AI*(log_textLengthCN1Ans + SimWithOpus1Ans )
-      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI
-)
-models[["DV: ans1_ans2_similarity"]] <- felm (ans1_ans2_similarity ~ AI
-      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI
-)
-models[["  "]] <- felm (ans1_ans2_similarity ~ AI+AI*(log_textLengthCN1Ans + SimWithOpus1Ans )
-      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
-      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
-      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
-      | dayofyear | 0 | 0, data = mydata_AI
-)
-print(screenreg(models,
-          stars = c(0.1, 0.05, 0.01, 0.001),
-          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
-          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
-          include.groups = FALSE, single.row = FALSE,
-          omit.coef = omit_pattern
-))
-# ===============================================================================================
-#                           DV: quality2Ans                DV: ans1_ans2_similarity              
-# -----------------------------------------------------------------------------------------------
-# AI                           0.225 *          0.990         0.029 **                  0.008    
-#                             (0.105)          (0.792)       (0.009)                   (0.066)   
-# log_textLengthCN1Ans                         -0.025                                   0.005    
-#                                              (0.068)                                 (0.006)   
-# SimWithOpus1Ans                               2.538 ***                               0.494 ***
-#                                              (0.501)                                 (0.043)   
-# AI:log_textLengthCN1Ans                      -0.038                                   0.002    
-#                                              (0.139)                                 (0.012)   
-# AI:SimWithOpus1Ans                           -1.464 *                                -0.109 *  
-#                                              (0.625)                                 (0.054)   
-# -----------------------------------------------------------------------------------------------
-# Num. obs.                 1906             1880          1913                      1888        
-# F statistic (full model)     1.237            1.400         1.451                     3.214    
-# F (full model): p-value      0.022            0.001         0.000                     0.000    
-# F statistic (proj model)     1.884            2.574         3.218                     9.795    
-# F (proj model): p-value      0.001            0.000         0.000                     0.000    
-# ===============================================================================================
-# *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
-
-mydata_AI <- mydata_AI %>% mutate(
-    AIcomprehensiveness = question_preAI_liNum,
-    AIcomprehensiveness_fillna = ifelse(AI == 1, question_preAI_liNum, 0)
-)
-
 models <- list()
 models[["DV: # human answers"]] <- felm(log_answer_que_within7day ~ AI+AI:(log_textLengthCNAI_fillna)
       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
@@ -1139,8 +830,162 @@ print(screenreg(models,
           include.groups = FALSE, single.row = FALSE,
           omit.coef = omit_pattern
 ))
+wordreg(models,
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          file = "Projects/MISQ/MISQ round 2/analysis/outputs/meeting260719_H2_tests.docx", inline.css = FALSE, doctype = FALSE, html.tag = TRUE, head.tag = TRUE, body.tag = TRUE,
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE,
+          include.groups = FALSE, single.row = FALSE,
+          omit.coef = omit_pattern
+)
+# ===============================================================================================
+#                                DV: # human answers  DV: # human answers   DV: # human answers  
+# -----------------------------------------------------------------------------------------------
+# AI                                0.202 **             0.226 **              0.129             
+#                                  (0.078)              (0.083)               (0.087)            
+# AI:log_textLengthCNAI_fillna     -0.044 **            -0.045 **             -0.028 .           
+#                                  (0.014)              (0.014)               (0.016)            
+# AI:AISimWithOpus47_fillna                             -0.038                                   
+#                                                       (0.051)                                  
+# AI:AIcomprehensiveness_fillna                                               -0.007 *           
+#                                                                             (0.003)            
+# -----------------------------------------------------------------------------------------------
+# Num. obs.                      3613                 3603                  3613                 
+# F statistic (full model)          3.006                2.978                 3.020             
+# F (full model): p-value           0.000                0.000                 0.000             
+# F statistic (proj model)         10.535               10.245                10.420             
+# F (proj model): p-value           0.000                0.000                 0.000             
+# ===============================================================================================
+# *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
 
 
+
+##############################################
+######## H3 test
+##############################################
+
+############################################## rule out alternative
+
+mydata_answer_firstHumanAns_reputation = mydata_answer_firstHumanAns %>% filter(!is.na(acceptedBefore_within_all))
+summary(mydata_answer_firstHumanAns_reputation$acceptedBefore_within_all)
+# 改名为acceptedBefore_within_all_firsthuman之后 merge到对应的mydata_AI上面去 按照questionURL
+mydata_answer_firstHumanAns_reputation <- mydata_answer_firstHumanAns_reputation %>% rename(acceptedBefore_within_all_firsthuman = acceptedBefore_within_all)
+mydata_AI <- mydata_AI %>% left_join(mydata_answer_firstHumanAns_reputation %>% dplyr::select(questionURL, acceptedBefore_within_all_firsthuman), by = "questionURL")
+mydata_AI$log_acceptedBefore_within_all_firsthuman <- log(mydata_AI$acceptedBefore_within_all_firsthuman + 1)
+models <- list()
+models[["DV: human 1 expertise"]] <- felm (log_acceptedBefore_within_all_firsthuman ~ AI+AI:(log_textLengthCNAI_fillna + AISimWithOpus47_fillna)
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI)
+print(screenreg(models,
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
+          include.groups = FALSE, single.row = FALSE,
+          omit.coef = omit_pattern
+))
+wordreg(models,
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          file = "Projects/MISQ/MISQ round 2/analysis/outputs/meeting260719_H3_no selection.docx", inline.css = FALSE, doctype = FALSE, html.tag = TRUE, head.tag = TRUE, body.tag = TRUE,
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE,
+          include.groups = FALSE, single.row = FALSE,
+          omit.coef = omit_pattern
+)
+# ===================================================
+#                               DV: human 1 expertise
+# ---------------------------------------------------
+# AI                               0.250             
+#                                 (0.545)            
+# AI:log_textLengthCNAI_fillna     0.006             
+#                                 (0.089)            
+# AI:AISimWithOpus47_fillna       -0.394             
+#                                 (0.362)            
+# ---------------------------------------------------
+# Num. obs.                     2739                 
+# F statistic (full model)         2.339             
+# F (full model): p-value          0.000             
+# F statistic (proj model)        18.570             
+# F (proj model): p-value          0.000             
+# ===================================================
+# *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
+
+
+############################################## rule out knowledge spillover
+
+mydata_AI <- mydata_AI %>% mutate(
+    SimWithAccept1Ans = ifelse(treatment == 1, AISimWithAccept, human1SimWithAccept),
+    SimWithOpus1Ans = ifelse(treatment == 1, AISimWithGT__claude_opus_4_7, human1SimWithGT__claude_opus_4_7),
+    SimWithOpus2Ans = ifelse(treatment == 1, human1SimWithGT__claude_opus_4_7, human2SimWithGT__claude_opus_4_7),
+    SimWithDeepseek1Ans = ifelse(treatment == 1, AISimWithGT__deepseek_v4_pro, human1SimWithGT__deepseek_v4_pro)
+)
+models <- list()
+# models[["DV: quality2Ans"]] <- felm (quality2Ans ~ AI
+#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+#       | dayofyear | 0 | 0, data = mydata_AI
+# )
+# models[[" "]] <- felm (quality2Ans ~ AI+AI*(log_textLengthCN1Ans + SimWithOpus1Ans )
+#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+#       | dayofyear | 0 | 0, data = mydata_AI
+# )
+# models[["DV: ans1_ans2_similarity"]] <- felm (ans1_ans2_similarity ~ AI
+#       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+#       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+#       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+#       | dayofyear | 0 | 0, data = mydata_AI
+# )
+models[["DV: ans1_ans2_similarity "]] <- felm (ans1_ans2_similarity ~ AI+AI*(log_textLengthCN1Ans + SimWithOpus1Ans )
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI
+)
+print(screenreg(models,
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
+          include.groups = FALSE, single.row = FALSE,
+          omit.coef = omit_pattern
+))
+wordreg(models,
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          file = "Projects/MISQ/MISQ round 2/analysis/outputs/meeting260719_H3_no knowledge spillover.docx", inline.css = FALSE, doctype = FALSE, html.tag = TRUE, head.tag = TRUE, body.tag = TRUE,
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE,
+          include.groups = FALSE, single.row = FALSE,
+          omit.coef = omit_pattern
+)
+# ===================================================
+#                           DV: ans1_ans2_similarity 
+# ---------------------------------------------------
+# AI                           0.008                 
+#                             (0.066)                
+# log_textLengthCN1Ans         0.005                 
+#                             (0.006)                
+# SimWithOpus1Ans              0.494 ***             
+#                             (0.043)                
+# AI:log_textLengthCN1Ans      0.002                 
+#                             (0.012)                
+# AI:SimWithOpus1Ans          -0.109 *               
+#                             (0.054)                
+# ---------------------------------------------------
+# Num. obs.                 1888                     
+# F statistic (full model)     3.214                 
+# F (full model): p-value      0.000                 
+# F statistic (proj model)     9.795                 
+# F (proj model): p-value      0.000                 
+# ===================================================
+# *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
+
+mydata_AI <- mydata_AI %>% mutate(
+    AIcomprehensiveness = question_preAI_liNum,
+    AIcomprehensiveness_fillna = ifelse(AI == 1, question_preAI_liNum, 0)
+)
 
 
 
