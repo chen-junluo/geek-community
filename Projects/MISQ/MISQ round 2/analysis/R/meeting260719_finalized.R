@@ -804,6 +804,11 @@ wordreg(models,
 ##############################################
 ######## H2 tests
 ##############################################
+mydata_AI <- mydata_AI %>% mutate(
+    AIcomprehensiveness = question_preAI_liNum,
+    AIcomprehensiveness_fillna = ifelse(AI == 1, question_preAI_liNum, 0)
+)
+
 models <- list()
 models[["DV: # human answers"]] <- felm(log_answer_que_within7day ~ AI+AI:(log_textLengthCNAI_fillna)
       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
@@ -858,6 +863,44 @@ wordreg(models,
 # ===============================================================================================
 # *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
 
+
+
+
+cor_len_topic <- cor(
+  mydata_AI$log_textLengthCNAI_fillna,
+  mydata_AI$AIcomprehensiveness_fillna,
+  use = "complete.obs",
+  method = "pearson"
+)
+print(cor_len_topic)
+
+mydata_AI$AIcomprehensiveness_resid <- resid(
+  lm(
+    AIcomprehensiveness_fillna ~ log_textLengthCNAI_fillna,
+    data = mydata_AI
+  )
+)
+
+models <- list()
+models[["DV: # human answers"]] <- felm(log_answer_que_within7day ~ AI+AI:(log_textLengthCNAI_fillna)
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI
+)
+models[["DV: # human answers  "]] <- felm(log_answer_que_within7day ~ (AI+AI:(log_textLengthCNAI_fillna + AIcomprehensiveness_resid))
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI
+)
+print(screenreg(models,
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
+          include.groups = FALSE, single.row = FALSE,
+          omit.coef = omit_pattern
+))
 
 
 ##############################################
