@@ -3,6 +3,8 @@ Thumbs.db
 *.swp
 *.swo
 .vscode/
+.claude/
+.agents/
 .idea/
 __pycache__/
 *.pyc

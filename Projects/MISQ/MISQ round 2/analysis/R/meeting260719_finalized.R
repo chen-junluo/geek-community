@@ -799,6 +799,27 @@ wordreg(models,
 # =======================================================================
 # *** p < 0.001; ** p < 0.01; * p < 0.05; . p < 0.1
 
+models <- list()
+models[["DV: # other answers"]] <- felm(log_answer_que_within7day_other ~ treatment
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI
+)
+models[[" "]] <- felm(log_answer_que_within7day_other ~ treatment+treatment*(log_textLengthCN1Ans + SimWithOpus1Ans)
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      | dayofyear | 0 | 0, data = mydata_AI
+)
+print(screenreg(models,
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
+          include.groups = FALSE, single.row = FALSE,
+          omit.coef = omit_pattern
+))
+
 
 
 ##############################################
@@ -872,7 +893,7 @@ cor_len_topic <- cor(
   use = "complete.obs",
   method = "pearson"
 )
-print(cor_len_topic)
+print(cor_len_topic,
 
 mydata_AI$AIcomprehensiveness_resid <- resid(
   lm(
@@ -1032,6 +1053,135 @@ mydata_AI <- mydata_AI %>% mutate(
 
 
 
+
+
+
+
+# ==============================
+# Appendix B - LLM-generated content quality rating
+# ==============================
+models <- list()
+models[["AIfail only AI"]] <- felm (AISimWithGT__claude_opus_4_7 ~ 
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      + AIfail
+      | dayofyear | 0 | 0, data = mydata_AI)
+models[["AIfail"]] <- felm (SimWithOpus1Ans ~ 
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      + AIfail
+      | dayofyear | 0 | 0, data = mydata_AI)
+models[["netlike"]] <- felm (SimWithOpus1Ans ~ 
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      + netlikeNum_1Resp
+      | dayofyear | 0 | 0, data = mydata_AI)
+summary(models[["netlike"]])
+models[["accepted"]] <- felm (SimWithOpus1Ans ~ 
+      + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
+      + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
+      + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask +  asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
+      + accepted_1Resp
+      | dayofyear | 0 | 0, data = mydata_AI)
+summary(models[["accepted"]])
+print(screenreg(models,
+          stars = c(0.1, 0.05, 0.01, 0.001),
+          digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust=T,
+          include.groups = FALSE, single.row = FALSE))
+
+t.test(mydata_AI$AISimWithGT__claude_opus_4_7 ~ mydata_AI$AIfail)
+# Welch Two Sample t-test
+# data:  mydata_AI$AISimWithGT__claude_opus_4_7 by mydata_AI$AIfail
+# t = 4.3028, df = 33.562, p-value = 0.0001377
+# alternative hypothesis: true difference in means between group 0 and group 1 is not equal to 0
+# 95 percent confidence interval:
+#  0.08858795 0.24731458
+# sample estimates:
+# mean in group 0 mean in group 1 
+#       0.5586419       0.3906906
+
+
+filtered_data <- mydata_AI %>%
+  filter(!is.na(human1SimWithGT__claude_opus_4_7) & !is.na(accepted_1Resp))
+t.test(filtered_data$human1SimWithGT__claude_opus_4_7 ~ filtered_data$accepted_1Resp)
+# t = -6.3025, df = 1481.1, p-value = 3.854e-10
+# alternative hypothesis: true difference in means between group 0 and group 1 is not equal to 0
+# 95 percent confidence interval:
+#  -0.06589845 -0.03461516
+# sample estimates:
+# mean in group 0 mean in group 1 
+#       0.4296115       0.4798683
+
+
+# 按照netlikes的mean和median来分，搞一个indicator，然后在这个indicator上面看t-test
+filtered_data <- mydata_AI %>%
+  filter(!is.na(human1SimWithGT__claude_opus_4_7) & !is.na(netlikeNum_1Resp))
+filtered_data <- filtered_data %>%
+  mutate(netlike_indicator = ifelse(netlikeNum_1Resp > median(netlikeNum_1Resp, na.rm = TRUE), 1, 0))
+t.test(filtered_data$human1SimWithGT__claude_opus_4_7 ~ filtered_data$netlike_indicator)
+filtered_data <- filtered_data %>%
+  mutate(netlike_indicator = ifelse(netlikeNum_1Resp > mean(netlikeNum_1Resp, na.rm = TRUE), 1, 0))
+t.test(filtered_data$human1SimWithGT__claude_opus_4_7 ~ filtered_data$netlike_indicator)
+# data:  filtered_data$human1SimWithGT__claude_opus_4_7 by filtered_data$netlike_indicator
+# t = -3.3232, df = 961.86, p-value = 0.0009234
+# alternative hypothesis: true difference in means between group 0 and group 1 is not equal to 0
+# 95 percent confidence interval:
+#  -0.04549904 -0.01171368
+# sample estimates:
+# mean in group 0 mean in group 1 
+#       0.4385750       0.4671813 
+
+# > filtered_data <- filtered_data %>%
+# +   mutate(netlike_indicator = ifelse(netlikeNum_1Resp > mean(netlikeNum_1Resp, na.rm = TRUE), 1, 0))
+# > t.test(filtered_data$human1SimWithGT__claude_opus_4_7 ~ filtered_data$netlike_indicator)
+
+#         Welch Two Sample t-test
+
+# data:  filtered_data$human1SimWithGT__claude_opus_4_7 by filtered_data$netlike_indicator
+# t = -3.3232, df = 961.86, p-value = 0.0009234
+# alternative hypothesis: true difference in means between group 0 and group 1 is not equal to 0
+# 95 percent confidence interval:
+#  -0.04549904 -0.01171368
+# sample estimates:
+# mean in group 0 mean in group 1 
+#       0.4385750       0.4671813 
+
+
+
+
+wilcox.test(mydata_AI$accumRep_ask ~ mydata_AI$AI)
+library(ggplot2)
+
+# ---------- 图1：原始 Reputation Scores ----------
+p1 <- ggplot(mydata_AI, aes(x = accumRep_ask)) +
+  geom_histogram(aes(y = after_stat(density)),
+                 bins = 100,               # 分组数，可调整
+                 fill = "grey80",
+                 color = "black") +
+  labs(x = "Values of Reputation Scores",
+       y = "Probability Density") +
+  theme_classic()
+
+ggsave("Projects/MISQ/MISQ round 2/analysis/outputs/reputation_scores.png", plot = p1,
+       width = 6, height = 4, dpi = 300)
+
+
+# ---------- 图2：Log Reputation Scores ----------
+p2 <- ggplot(mydata_AI, aes(x = log_accumRep_ask)) +
+  geom_histogram(aes(y = after_stat(density)),
+                 bins = 40,                # 分组数，可调整
+                 fill = "grey80",
+                 color = "black") +
+  labs(x = "Values of Log Reputation Scores",
+       y = "Probability Density") +
+  theme_classic()
+
+ggsave("Projects/MISQ/MISQ round 2/analysis/outputs/log_reputation_scores.png", plot = p2,
+       width = 6, height = 4, dpi = 300)
 
 
 
