@@ -11,57 +11,69 @@
 <tr>
 <th style="padding-left: 5px;padding-right: 5px;">&nbsp;</th>
 <th style="padding-left: 5px;padding-right: 5px;">DV: human 1 expertise</th>
+<th style="padding-left: 5px;padding-right: 5px;">DV: accuracy_m2 </th>
 </tr>
 </thead>
 <tbody>
 <tr style="border-top: 1px solid #000000;">
 <td style="padding-left: 5px;padding-right: 5px;">AI</td>
 <td style="padding-left: 5px;padding-right: 5px;">0.048</td>
+<td style="padding-left: 5px;padding-right: 5px;">0.852</td>
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">&nbsp;</td>
-<td style="padding-left: 5px;padding-right: 5px;">(0.521)</td>
+<td style="padding-left: 5px;padding-right: 5px;">(0.519)</td>
+<td style="padding-left: 5px;padding-right: 5px;">(0.726)</td>
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">AI:log_textLengthCNAI_fillna</td>
 <td style="padding-left: 5px;padding-right: 5px;">0.011</td>
+<td style="padding-left: 5px;padding-right: 5px;">-0.239<sup>&middot;</sup></td>
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">&nbsp;</td>
 <td style="padding-left: 5px;padding-right: 5px;">(0.091)</td>
+<td style="padding-left: 5px;padding-right: 5px;">(0.129)</td>
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">AI:qualityAI_fillna</td>
 <td style="padding-left: 5px;padding-right: 5px;">-0.005</td>
+<td style="padding-left: 5px;padding-right: 5px;">0.083<sup>&#42;</sup></td>
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">&nbsp;</td>
-<td style="padding-left: 5px;padding-right: 5px;">(0.031)</td>
+<td style="padding-left: 5px;padding-right: 5px;">(0.032)</td>
+<td style="padding-left: 5px;padding-right: 5px;">(0.041)</td>
 </tr>
 <tr style="border-top: 1px solid #000000;">
 <td style="padding-left: 5px;padding-right: 5px;">Num. obs.</td>
 <td style="padding-left: 5px;padding-right: 5px;">2747</td>
+<td style="padding-left: 5px;padding-right: 5px;">2728</td>
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">F statistic (full model)</td>
 <td style="padding-left: 5px;padding-right: 5px;">2.339</td>
+<td style="padding-left: 5px;padding-right: 5px;">1.392</td>
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">F (full model): p-value</td>
 <td style="padding-left: 5px;padding-right: 5px;">0.000</td>
+<td style="padding-left: 5px;padding-right: 5px;">0.001</td>
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">F statistic (proj model)</td>
-<td style="padding-left: 5px;padding-right: 5px;">7.060</td>
+<td style="padding-left: 5px;padding-right: 5px;">18.656</td>
+<td style="padding-left: 5px;padding-right: 5px;">2.311</td>
 </tr>
 <tr style="border-bottom: 2px solid #000000;">
 <td style="padding-left: 5px;padding-right: 5px;">F (proj model): p-value</td>
+<td style="padding-left: 5px;padding-right: 5px;">0.000</td>
 <td style="padding-left: 5px;padding-right: 5px;">0.000</td>
 </tr>
 </tbody>
 <tfoot>
 <tr>
-<td style="font-size: 0.8em;" colspan="2"><sup>&#42;&#42;&#42;</sup>p &lt; 0.001; <sup>&#42;&#42;</sup>p &lt; 0.01; <sup>&#42;</sup>p &lt; 0.05; <sup>&middot;</sup>p &lt; 0.1</td>
+<td style="font-size: 0.8em;" colspan="3"><sup>&#42;&#42;&#42;</sup>p &lt; 0.001; <sup>&#42;&#42;</sup>p &lt; 0.01; <sup>&#42;</sup>p &lt; 0.05; <sup>&middot;</sup>p &lt; 0.1</td>
 </tr>
 </tfoot>
 </table>

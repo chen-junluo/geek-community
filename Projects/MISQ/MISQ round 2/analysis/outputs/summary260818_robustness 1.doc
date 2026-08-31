@@ -28,7 +28,7 @@
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">&nbsp;</td>
-<td style="padding-left: 5px;padding-right: 5px;">(0.082)</td>
+<td style="padding-left: 5px;padding-right: 5px;">(0.080)</td>
 <td style="padding-left: 5px;padding-right: 5px;">(0.081)</td>
 <td style="padding-left: 5px;padding-right: 5px;">(0.199)</td>
 <td style="padding-left: 5px;padding-right: 5px;">&nbsp;</td>
@@ -36,7 +36,7 @@
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">AI:log_textLengthCNAI_fillna</td>
-<td style="padding-left: 5px;padding-right: 5px;">-0.046<sup>&#42;&#42;</sup></td>
+<td style="padding-left: 5px;padding-right: 5px;">-0.046<sup>&#42;&#42;&#42;</sup></td>
 <td style="padding-left: 5px;padding-right: 5px;">-0.041<sup>&#42;&#42;</sup></td>
 <td style="padding-left: 5px;padding-right: 5px;">-0.117<sup>&#42;&#42;&#42;</sup></td>
 <td style="padding-left: 5px;padding-right: 5px;">&nbsp;</td>
@@ -4972,7 +4972,7 @@
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">F statistic (proj model)</td>
-<td style="padding-left: 5px;padding-right: 5px;">9.317</td>
+<td style="padding-left: 5px;padding-right: 5px;">10.326</td>
 <td style="padding-left: 5px;padding-right: 5px;">&nbsp;</td>
 <td style="padding-left: 5px;padding-right: 5px;">&nbsp;</td>
 <td style="padding-left: 5px;padding-right: 5px;">&nbsp;</td>

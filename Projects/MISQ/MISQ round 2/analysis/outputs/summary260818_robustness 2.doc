@@ -22,17 +22,17 @@
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">&nbsp;</td>
-<td style="padding-left: 5px;padding-right: 5px;">(0.603)</td>
+<td style="padding-left: 5px;padding-right: 5px;">(0.718)</td>
 <td style="padding-left: 5px;padding-right: 5px;">(0.603)</td>
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">AI:log_textLengthCNAI_fillna</td>
-<td style="padding-left: 5px;padding-right: 5px;">-0.204<sup>&middot;</sup></td>
+<td style="padding-left: 5px;padding-right: 5px;">-0.204</td>
 <td style="padding-left: 5px;padding-right: 5px;">-0.204<sup>&middot;</sup></td>
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">&nbsp;</td>
-<td style="padding-left: 5px;padding-right: 5px;">(0.106)</td>
+<td style="padding-left: 5px;padding-right: 5px;">(0.128)</td>
 <td style="padding-left: 5px;padding-right: 5px;">(0.106)</td>
 </tr>
 <tr>
@@ -42,7 +42,7 @@
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">&nbsp;</td>
-<td style="padding-left: 5px;padding-right: 5px;">(0.036)</td>
+<td style="padding-left: 5px;padding-right: 5px;">(0.037)</td>
 <td style="padding-left: 5px;padding-right: 5px;">(0.036)</td>
 </tr>
 <tr>
@@ -1562,7 +1562,7 @@
 </tr>
 <tr>
 <td style="padding-left: 5px;padding-right: 5px;">F statistic (proj model)</td>
-<td style="padding-left: 5px;padding-right: 5px;">2.431</td>
+<td style="padding-left: 5px;padding-right: 5px;">2.521</td>
 <td style="padding-left: 5px;padding-right: 5px;">&nbsp;</td>
 </tr>
 <tr>
