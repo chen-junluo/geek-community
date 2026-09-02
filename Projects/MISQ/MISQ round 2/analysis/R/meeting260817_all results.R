@@ -288,6 +288,7 @@ mydata_AI <- mydata_AI %>% mutate(
 mydata_AI = mydata_AI %>% mutate(
   qualityAI_fillna = ifelse(treatment == 1, quality1Ans, 0),
   log_textLengthCNAI_fillna = ifelse(treatment == 1, log_textLengthCN1Ans, 0),
+  log_textLengthCNAI = ifelse(treatment == 1, log_textLengthCN1Ans, NA),
   textLengthCNAI_fillna = ifelse(treatment == 1, textLengthCN1Ans, 0)
 )
 
@@ -609,6 +610,7 @@ mydata_answer = mydata_answer %>% mutate(
 mydata_AI = mydata_AI %>% mutate(
   AISimWithAccept_fillna = ifelse(treatment == 1, AISimWithAccept, 0),
   AISimWithOpus47_fillna = ifelse(treatment == 1, AISimWithGT__claude_opus_4_7, 0),
+  AISimWithOpus47 = ifelse(treatment == 1, AISimWithGT__claude_opus_4_7, NA),
   AISimWithDeepseek_fillna = ifelse(treatment == 1, AISimWithGT__deepseek_v4_pro, 0)
 )
 summary(mydata_AI$AISimWithAccept_fillna)
@@ -729,6 +731,9 @@ print(screenreg(models,
           include.groups = FALSE, single.row = FALSE,
           omit.coef = omit_pattern
 ))
+
+cor(mydata_AI$qualityAI,mydata_AI$AISimWithOpus47, use = "complete.obs")
+
 htmlreg(models,
         stars = c(0.1, 0.05, 0.01, 0.001),
         file = "Projects/MISQ/MISQ round 2/analysis/outputs/summary260818_main results.doc",
@@ -740,6 +745,10 @@ htmlreg(models,
 )
 linearHypothesis(models[["DV: human 1 quality "]], 
                  "AI - AI:qualityAI_fillna = 0")
+summary(models[["DV: # human answers "]])
+summary(models[["DV: human 1 quality"]])
+summary(models[["DV: human 1 quality "]])
+
 
 # ==================================================================================================================
 #                               DV: # human answers  DV: # human answers   DV: human 1 quality  DV: human 1 quality 
@@ -913,9 +922,12 @@ htmlreg(models,
 ##############################################
 mydata_AI <- mydata_AI %>% mutate(
     AIcomprehensiveness = question_preAI_liNum,
-    AIcomprehensiveness_fillna = ifelse(AI == 1, question_preAI_liNum, 0)
+    AIcomprehensiveness_fillna = ifelse(AI == 1, question_preAI_liNum, 0),
+    AIcomprehensiveness_gt1 = ifelse(AIcomprehensiveness==0,1,AIcomprehensiveness),
+    AIcomprehensiveness_gt1_fillna = ifelse(AI == 1, AIcomprehensiveness_gt1, 0)
 )
 
+table(mydata_AI$AIcomprehensiveness_gt1_fillna)
 
 models <- list()
 models[["DV: # human answers"]] <- felm(log_answer_que_within7day ~ AI+AI:(log_textLengthCNAI_fillna)
@@ -930,7 +942,7 @@ models[["DV: # human answers "]] <- felm(log_answer_que_within7day ~ AI+AI:(log_
       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
       | dayofyear | 0 | 0, data = mydata_AI
 )
-models[["DV: # human answers  "]] <- felm(log_answer_que_within7day ~ (AI+AI:(log_textLengthCNAI_fillna + AIcomprehensiveness_fillna))
+models[["DV: # human answers  "]] <- felm(log_answer_que_within7day ~ (AI+AI:(log_textLengthCNAI_fillna + AIcomprehensiveness_gt1_fillna))
       + log_textLengthCN_ask + IimgNum_ask + IaNum_ask + IblockquoteNum_ask + ItableNum_ask + lingComp_score + techJargon_score + difficulty_score
       + category1 + category2 + category3 + category4 + category5 + category6 + category7 + category8 + category9
       + log_age + log_askBefore + log_resBefore + log_accumRep_ask + accumGold_ask + accumSilver_ask + accumCopper_ask + asker_acceptedBefore_allsite_1m + asker_nActivityBeforeAsk_allsite_1m + asker_nActivityBeforeResp_allsite_1m + asker_nActivityBeforeComment_allsite_1m + asker_acceptedBefore_allsite_2m + asker_nActivityBeforeAsk_allsite_2m + asker_nActivityBeforeResp_allsite_2m + asker_nActivityBeforeComment_allsite_2m + asker_acceptedBefore_allsite_3m + asker_nActivityBeforeAsk_allsite_3m + asker_nActivityBeforeResp_allsite_3m + asker_nActivityBeforeComment_allsite_3m
@@ -943,6 +955,10 @@ print(screenreg(models,
           include.groups = FALSE, single.row = FALSE,
           omit.coef = omit_pattern
 ))
+# 计算log_textLengthCNAI_fillna和AIcomprehensiveness_fillna的相关系数
+cor(mydata_AI$log_textLengthCNAI, mydata_AI$AIcomprehensiveness, use = "complete.obs")
+cor(mydata_AI$log_textLengthCNAI, mydata_AI$AIcomprehensiveness_gt1, use = "complete.obs")
+
 htmlreg(models,
         stars = c(0.1, 0.05, 0.01, 0.001),
         file = "Projects/MISQ/MISQ round 2/analysis/outputs/summary260818_H2 test.doc",
@@ -952,6 +968,10 @@ htmlreg(models,
         include.groups = FALSE, single.row = FALSE,
         omit.coef = omit_pattern
 )
+
+table(mydata_AI$AIcomprehensiveness)
+
+summary(mydata_AI_isnotAI$answer_que_within7day)
 
 
 
@@ -1072,6 +1092,7 @@ htmlreg(models,
 # sort by AI accuracy, then human1-AI accuracy
 
 summary(mydata_answer_firstHumanAns_isAI$qualityAI) #7.158
+table(mydata_answer_firstHumanAns_isAI$qualityAI)
 
 mydata_answer_firstHumanAns_isAI = mydata_answer_firstHumanAns %>% filter(AI == 1)
 mydata_answer_firstHumanAns_isAI_high = mydata_answer_firstHumanAns %>% filter(AI == 1, qualityAI_fillna > 7.158)
@@ -1167,7 +1188,7 @@ models[["AI group"]] <- felm (ans1_ans2_similarity ~ log_textLengthCN1Ans + qual
 print(screenreg(models,
           stars = c(0.1, 0.05, 0.01, 0.001),
           digits = 3, dcolumn = TRUE, threeparttable = TRUE, fontsize = "tiny",
-          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE, r
+          include.fstatistic = TRUE, include.adjrs = FALSE, include.rsquared = FALSE, robust = TRUE,
           include.groups = FALSE, single.row = FALSE,
           omit.coef = omit_pattern
 ))
@@ -1712,3 +1733,17 @@ ggsave("Projects/MISQ/MISQ round 2/analysis/outputs/log_reputation_scores.png", 
 
 
 
+# ---------- 图1：原始 Reputation Scores ----------
+p1 <- ggplot(mydata_answer, aes(x = netlikeNum)) +
+  geom_histogram(aes(y = after_stat(density)),
+                 bins = 100,               # 分组数，可调整
+                 fill = "grey80",
+                 color = "black") +
+  labs(x = "Values of netlikeNum",
+       y = "Probability Density") +
+  theme_classic()
+p1
+ggsave("Projects/MISQ/MISQ round 2/analysis/outputs/netlikeNum.png", plot = p1,
+       width = 6, height = 4, dpi = 300)
+summary(mydata_answer$netlikeNum)
+sd(mydata_answer$netlikeNum)
